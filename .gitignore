@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# Environment variables (will exist)
+.env
+.env.local
+
+# Project data directories
+journals/
+chroma_db/
+
+# Node.js (will exist after npm install)
+node_modules/
+
+# Next.js build (will exist after build)
+.next/
+out/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Specification workflow
+.spec-workflow/
+init_prompt.md
