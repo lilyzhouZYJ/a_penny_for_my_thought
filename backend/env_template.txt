@@ -1,0 +1,31 @@
+# OpenAI Configuration
+OPENAI_API_KEY=sk-your-api-key-here
+
+# Optional: Model Configuration
+OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# Optional: Storage Paths
+JOURNALS_DIRECTORY=./journals
+VECTOR_DB_DIRECTORY=./chroma_db
+
+# Optional: RAG Configuration
+RAG_TOP_K=5
+RAG_SIMILARITY_THRESHOLD=0.7
+
+# Optional: API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Optional: LLM Configuration
+LLM_TEMPERATURE=0.7
+LLM_MAX_TOKENS=2000
+STREAMING_ENABLED=true
+
+# Optional: CORS
+CORS_ORIGINS=["http://localhost:3000"]
+
+# Optional: Logging
+LOG_LEVEL=INFO
+
+
