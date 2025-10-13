@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 venv/
 
+# Testing
+.pytest_cache/
+
 # Environment variables (will exist)
 .env
 .env.local

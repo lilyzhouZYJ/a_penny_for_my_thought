@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.middleware.error_handler import error_handler_middleware
+from app.api.v1 import chat, journals
 from app.config import settings
 
 # Configure logging
@@ -55,6 +57,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add error handling middleware
+app.middleware("http")(error_handler_middleware)
+
 
 @app.get("/health")
 async def health_check():
@@ -71,13 +76,18 @@ async def root():
     """Root endpoint with API information."""
     return {
         "message": "LLM Journal Webapp API",
+        "version": "1.0.0",
         "docs": "/docs",
         "health": "/health",
+        "endpoints": {
+            "chat": "/api/v1/chat",
+            "chat_stream": "/api/v1/chat/stream",
+            "journals": "/api/v1/journals"
+        }
     }
 
 
-# TODO: Add API routers here in later tasks
-# from app.api.v1 import chat, journals
-# app.include_router(chat.router, prefix="/api/v1")
-# app.include_router(journals.router, prefix="/api/v1")
+# Include API routers
+app.include_router(chat.router, prefix="/api/v1")
+app.include_router(journals.router, prefix="/api/v1")
 

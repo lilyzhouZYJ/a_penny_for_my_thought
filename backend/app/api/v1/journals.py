@@ -1,0 +1,183 @@
+import logging
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from app.models import (
+    CreateJournalRequest,
+    Journal,
+    JournalMetadata,
+    JournalNotFoundError,
+)
+from app.services.journal_service import JournalService
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/journals", tags=["journals"])
+
+
+# Import dependency injection
+from app.dependencies import get_journal_service
+
+
+@router.get("", response_model=dict)
+async def list_journals(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    sort_by: str = Query(default="date"),
+    journal_service: JournalService = Depends(get_journal_service)
+):
+    """
+    List all journal entries with pagination.
+    
+    Args:
+        limit: Maximum number of journals to return (1-100)
+        offset: Number of journals to skip
+        sort_by: Sort field (currently only 'date' supported)
+        journal_service: Injected JournalService
+    
+    Returns:
+        Dict with journals list and pagination info
+    """
+    try:
+        journals, total = await journal_service.list_journals(
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by
+        )
+        
+        logger.info(f"Listed {len(journals)} journals (total: {total})")
+        
+        return {
+            "journals": journals,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to list journals: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list journals: {str(e)}"
+        )
+
+
+@router.get("/{journal_id}", response_model=Journal)
+async def get_journal(
+    journal_id: str,
+    journal_service: JournalService = Depends(get_journal_service)
+) -> Journal:
+    """
+    Get a specific journal entry.
+    
+    Used to load past conversations into the chat interface for continuation.
+    Reads from MARKDOWN FILE on disk (NOT from ChromaDB).
+    
+    Args:
+        journal_id: Journal filename
+        journal_service: Injected JournalService
+    
+    Returns:
+        Full journal with messages and raw markdown content
+    
+    Raises:
+        HTTPException 404: If journal not found
+    """
+    try:
+        journal = await journal_service.get_journal(journal_id)
+        
+        logger.info(f"Retrieved journal: {journal_id} ({journal.message_count} messages)")
+        
+        return journal
+        
+    except JournalNotFoundError as e:
+        logger.warning(f"Journal not found: {journal_id}")
+        raise e
+    except Exception as e:
+        logger.error(f"Failed to get journal: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve journal: {str(e)}"
+        )
+
+
+@router.post("", response_model=JournalMetadata)
+async def save_journal(
+    request: CreateJournalRequest,
+    journal_service: JournalService = Depends(get_journal_service)
+) -> JournalMetadata:
+    """
+    Save or update a journal entry.
+    
+    If journal_id is provided in request, updates existing journal.
+    If journal_id is None/missing, creates new journal.
+    
+    Args:
+        request: Journal creation/update request
+        journal_service: Injected JournalService
+    
+    Returns:
+        JournalMetadata with saved journal information
+    """
+    try:
+        result = await journal_service.save_journal(
+            session_id=request.session_id,
+            messages=request.messages,
+            journal_id=request.journal_id,
+            title=request.title
+        )
+        
+        action = "Updated" if request.journal_id else "Created"
+        logger.info(f"{action} journal: {result.filename}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to save journal: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save journal: {str(e)}"
+        )
+
+
+@router.delete("/{journal_id}")
+async def delete_journal(
+    journal_id: str,
+    journal_service: JournalService = Depends(get_journal_service)
+):
+    """
+    Delete a journal entry.
+    
+    Removes from both filesystem and vector database.
+    
+    Args:
+        journal_id: Journal filename to delete
+        journal_service: Injected JournalService
+    
+    Returns:
+        Success message
+    
+    Raises:
+        HTTPException 404: If journal not found
+    """
+    try:
+        await journal_service.delete_journal(journal_id)
+        
+        logger.info(f"Deleted journal: {journal_id}")
+        
+        return {
+            "success": True,
+            "message": f"Journal {journal_id} deleted successfully"
+        }
+        
+    except JournalNotFoundError as e:
+        logger.warning(f"Journal not found for deletion: {journal_id}")
+        raise e
+    except Exception as e:
+        logger.error(f"Failed to delete journal: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete journal: {str(e)}"
+        )
+
