@@ -28,6 +28,7 @@ class ChatRequest(BaseModel):
     """
     message: str = Field(..., min_length=1, max_length=10000)
     session_id: str
+    conversation_history: List[Message] = Field(default_factory=list)  # Full conversation history
     use_rag: bool = True
     stream: bool = False
 
@@ -38,6 +39,7 @@ class ChatResponse(BaseModel):
     message: Message
     retrieved_context: List[RetrievedContext] = []
     metadata: Dict = Field(default_factory=dict)
+    auto_saved: bool = False  # Whether conversation was auto-saved
 
 class StreamEvent(BaseModel):
     """

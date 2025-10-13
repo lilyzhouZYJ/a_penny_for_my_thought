@@ -71,6 +71,7 @@ class TestChatRequest:
         
         assert req.message == "Hello"
         assert req.session_id == "session-123"
+        assert req.conversation_history == []  # Default empty
         assert req.use_rag is True
         assert req.stream is False
     
@@ -81,8 +82,24 @@ class TestChatRequest:
             session_id="session-123"
         )
         
+        assert req.conversation_history == []  # Default
         assert req.use_rag is True  # Default
         assert req.stream is False  # Default
+    
+    def test_chat_request_with_history(self):
+        """Test chat request with conversation history."""
+        msg1 = Message(role="user", content="Hi")
+        msg2 = Message(role="assistant", content="Hello!")
+        
+        req = ChatRequest(
+            message="How are you?",
+            session_id="session-123",
+            conversation_history=[msg1, msg2]
+        )
+        
+        assert len(req.conversation_history) == 2
+        assert req.conversation_history[0].content == "Hi"
+        assert req.conversation_history[1].content == "Hello!"
     
     def test_chat_request_empty_message_fails(self):
         """Test that empty message fails validation."""
@@ -108,6 +125,7 @@ class TestChatResponse:
         assert response.message == msg
         assert response.retrieved_context == []
         assert response.metadata == {}
+        assert response.auto_saved is False  # Default
     
     def test_chat_response_with_context(self):
         """Test chat response with retrieved context."""
@@ -121,12 +139,14 @@ class TestChatResponse:
         response = ChatResponse(
             message=msg,
             retrieved_context=[context],
-            metadata={"tokens": 100}
+            metadata={"tokens": 100},
+            auto_saved=True
         )
         
         assert len(response.retrieved_context) == 1
         assert response.retrieved_context[0].similarity_score == 0.85
         assert response.metadata["tokens"] == 100
+        assert response.auto_saved is True
 
 
 class TestJournalModels:

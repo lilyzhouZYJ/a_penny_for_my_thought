@@ -50,32 +50,3 @@ Don't force connections if they're not natural to the current conversation.
 """
     
     return formatted_context
-
-def create_chat_prompt(user_message: str, retrieved_contexts: List[RetrievedContext] = None) -> List[Dict[str, str]]:
-    """
-    Create chat prompt messages list for LLM.
-    
-    Args:
-        user_message: The user's current message
-        retrieved_contexts: Optional contexts retrieved from RAG
-    
-    Returns:
-        List of message dicts for OpenAI API format
-    """
-    # Format context if available
-    context_instruction = ""
-    if retrieved_contexts:
-        context_instruction = format_retrieved_context(retrieved_contexts)
-    
-    # Build messages list
-    system_message = JOURNALING_SYSTEM_PROMPT.format(
-        context_instruction=context_instruction
-    )
-    
-    messages = [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": user_message}
-    ]
-    
-    return messages
-

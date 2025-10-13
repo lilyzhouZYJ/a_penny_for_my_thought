@@ -7,7 +7,6 @@ python-dotenv==1.0.0
 
 # LLM & AI
 openai==1.12.0
-langchain==0.1.9
 langchain-openai==0.0.6
 
 # Vector Store
@@ -17,6 +16,7 @@ chromadb==0.4.22
 python-multipart==0.0.9
 aiofiles==23.2.1
 tenacity==8.2.3
+tiktoken==0.6.0
 
 # Development
 pytest==7.4.4
