@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional
 from uuid import uuid4
 
@@ -11,7 +11,7 @@ class Message(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     role: Literal["user", "assistant", "system"]
     content: str
-    timestamp: datetime = Field(default_factory=datetime.now(datetime.timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: Optional[Dict] = None
 
 class RetrievedContext(BaseModel):
