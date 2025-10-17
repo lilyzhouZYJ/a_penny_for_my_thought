@@ -1,128 +1,265 @@
-# Banking System Implementation
+# A Penny For My Thought - AI-Powered Journaling Web App
 
-A comprehensive banking system implementation supporting account management, transfers, payments with cashback, and account merging.
+An LLM-powered journaling web application with conversational interface, built with FastAPI and Next.js.
 
-## Features
+## 🌟 Features
 
-### Level 1: Basic Banking Operations
-- **Create Account**: Create new accounts with unique identifiers
-- **Deposit**: Add funds to existing accounts
-- **Transfer**: Move funds between accounts with balance validation
+- **Conversational AI Journaling**: Chat with an AI assistant for journaling
+- **Persistent Storage**: Conversations saved as Markdown files
+- **Semantic Search**: RAG-powered context from past conversations
+- **Real-time Streaming**: ChatGPT-like streaming responses
+- **Mobile Responsive**: Works perfectly on mobile and desktop
+- **Auto-save**: Conversations automatically saved after each message
+- **Shareable URLs**: Bookmark and share specific conversations
 
-### Level 2: Analytics
-- **Top Spenders**: Rank accounts by total outgoing transactions (transfers + withdrawals)
-  - Sorted by amount (descending) and alphabetically by account ID for ties
+## 🏗️ Architecture
 
-### Level 3: Payments with Cashback
-- **Pay**: Withdraw funds with automatic 2% cashback
-  - Cashback is processed 24 hours (86,400,000 ms) after withdrawal
-  - Each payment receives a unique identifier (payment1, payment2, ...)
-- **Payment Status**: Check if cashback has been received for a payment
-
-### Level 4: Advanced Features
-- **Account Merging**: Combine two accounts while preserving:
-  - Combined balances
-  - Transaction histories
-  - Pending cashback redirects
-  - Merged outgoing transaction totals
-- **Historical Balance**: Query account balance at any past timestamp
-
-## Implementation Details
-
-### Core Data Structures
-
-```python
-self.accounts                 # Current account states and balances
-self.transaction_history      # Complete transaction log for historical queries
-self.outgoing_transactions    # Total outgoing amount per account
-self.payments                 # Payment tracking with cashback status
-self.scheduled_cashbacks      # Pending cashback queue
-self.account_merges           # Merge mapping for redirections
+```
+├── backend/          # FastAPI Python backend
+│   ├── app/         # Application code
+│   ├── journals/    # Markdown conversation storage
+│   └── chroma_db/   # Vector database for RAG
+├── frontend/         # Next.js React frontend
+│   ├── app/         # Next.js App Router pages
+│   ├── components/  # React components
+│   └── lib/         # Utilities and API clients
+└── .spec-workflow/  # Specification and design docs
 ```
 
-### Key Design Decisions
+## 🚀 Quick Start
 
-1. **Cashback Processing**: Cashbacks are automatically processed at the beginning of each operation if their timestamp has arrived, ensuring temporal consistency.
+### Prerequisites
 
-2. **Account Resolution**: After merges, account IDs are resolved through a chain to find the current active account, allowing payment status queries and cashback redirects.
+- **Python 3.10+** (for backend)
+- **Node.js 18+** (for frontend)
+- **OpenAI API Key** (for AI functionality)
 
-3. **Transaction History**: Every operation is logged with timestamps to enable accurate historical balance reconstruction.
-
-4. **Merge Semantics**: When account A is merged into B:
-   - B inherits A's balance and outgoing transaction totals
-   - A's pending cashbacks are redirected to B
-   - Payment queries for A work with B's ID
-   - A's transaction history becomes part of B's history
-
-## Usage Example
-
-```python
-from banking_system import BankingSystem
-
-bank = BankingSystem()
-
-# Create accounts
-bank.create_account(1, "alice")
-bank.create_account(2, "bob")
-
-# Deposit funds
-bank.deposit(3, "alice", 1000)  # Returns: 1000
-bank.deposit(4, "bob", 500)     # Returns: 500
-
-# Transfer
-bank.transfer(5, "alice", "bob", 200)  # Returns: 800 (alice's balance)
-
-# Make payment with cashback
-payment_id = bank.pay(6, "alice", 100)  # Returns: "payment1"
-bank.get_payment_status(7, "alice", payment_id)  # Returns: "IN_PROGRESS"
-
-# After 24 hours (86400000 ms), cashback is processed
-bank.deposit(86400007, "alice", 50)  # Triggers cashback processing
-bank.get_payment_status(86400008, "alice", payment_id)  # Returns: "CASHBACK_RECEIVED"
-
-# Top spenders
-bank.top_spenders(10, 3)  # Returns: ["alice(300)", "bob(0)", ...]
-
-# Merge accounts
-bank.merge_accounts(11, "alice", "bob")  # Returns: True
-
-# Historical balance
-bank.get_balance(12, "alice", 5)  # Returns balance at timestamp 5
-```
-
-## Testing
-
-Run the test suite to verify all functionality:
+### 1. Clone and Setup
 
 ```bash
-python test_banking_system.py
+git clone <your-repo-url>
+cd a-penny-for-my-thought
+
+# Setup backend
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Setup frontend
+cd ../frontend
+npm install
 ```
 
-The test suite covers:
-- Basic operations (create, deposit, transfer)
-- Top spenders ranking with tie-breaking
-- Payment and cashback processing
-- Account merging with balance inheritance
-- Historical balance queries
-- Cashback redirection after merges
+### 2. Configure Environment
 
-## Complexity Analysis
+**Backend** (`backend/.env`):
+```bash
+# Required
+OPENAI_API_KEY=sk-your-openai-api-key-here
 
-- **create_account**: O(C) where C is the number of pending cashbacks
-- **deposit**: O(C)
-- **transfer**: O(C)
-- **pay**: O(C)
-- **top_spenders**: O(N log N + C) where N is the number of accounts
-- **get_payment_status**: O(M + C) where M is the merge chain length
-- **merge_accounts**: O(C)
-- **get_balance**: O(H + C) where H is the number of transactions
+# Optional (defaults provided)
+OPENAI_MODEL=gpt-4o
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+JOURNALS_DIRECTORY=./journals
+VECTOR_DB_DIRECTORY=./chroma_db
+RAG_TOP_K=5
+RAG_SIMILARITY_THRESHOLD=0.7
+LLM_TEMPERATURE=0.7
+LLM_MAX_TOKENS=2000
+STREAMING_ENABLED=true
+API_HOST=0.0.0.0
+API_PORT=8000
+CORS_ORIGINS=["http://localhost:3000"]
+LOG_LEVEL=INFO
+```
 
-## Notes
+**Frontend** (`frontend/.env.local`):
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-- All timestamps are guaranteed to be unique and in ascending order
-- Cashback is always 2% of the withdrawal amount, rounded down
-- Account IDs are case-sensitive strings
-- Operations on non-existent accounts return `None`
-- Merging an account into itself returns `False`
+### 3. Run the Application
 
+**Terminal 1 - Backend**:
+```bash
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload
+```
 
+**Terminal 2 - Frontend**:
+```bash
+cd frontend
+npm run dev
+```
+
+### 4. Access the App
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+## 📖 Usage
+
+1. **Start a New Conversation**: Click "New Conversation" or visit `/`
+2. **Chat**: Type your thoughts and get AI responses
+3. **View Past Conversations**: Use the sidebar to browse and load previous chats
+4. **Share**: Copy the URL to bookmark or share specific conversations
+
+## 🛠️ Development
+
+### Backend Development
+
+```bash
+cd backend
+source venv/bin/activate
+
+# Run tests
+pytest
+
+# Run with auto-reload
+uvicorn app.main:app --reload
+
+# Check API docs
+open http://localhost:8000/docs
+```
+
+### Frontend Development
+
+```bash
+cd frontend
+
+# Run development server
+npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
+```
+
+### Key Technologies
+
+**Backend**:
+- FastAPI (Python web framework)
+- OpenAI API (GPT-4o, text-embedding-3-small)
+- ChromaDB (vector database)
+- Pydantic (data validation)
+- Uvicorn (ASGI server)
+
+**Frontend**:
+- Next.js 14 (React framework)
+- TypeScript (type safety)
+- Tailwind CSS (styling)
+- shadcn/ui (component library)
+- React Context (state management)
+
+## 📁 Project Structure
+
+### Backend (`/backend`)
+- `app/main.py` - FastAPI application entry point
+- `app/models/` - Pydantic data models
+- `app/services/` - Business logic (LLM, RAG, Chat, Journal)
+- `app/storage/` - File and vector storage
+- `app/api/v1/` - REST API endpoints
+- `app/utils/` - Utility functions
+
+### Frontend (`/frontend`)
+- `app/` - Next.js App Router pages
+- `components/` - React components
+  - `chat/` - Chat interface components
+  - `conversations/` - Conversation list components
+  - `layout/` - Layout components
+  - `shared/` - Shared UI components
+- `lib/` - Utilities and API clients
+
+## 🔧 Configuration
+
+### Environment Variables
+
+See `backend/env_template.txt` and `frontend/env_template.txt` for all available options.
+
+### Key Settings
+
+- **`OPENAI_API_KEY`**: Required for AI functionality
+- **`NEXT_PUBLIC_API_URL`**: Backend API URL for frontend
+- **`RAG_TOP_K`**: Number of context chunks to retrieve
+- **`STREAMING_ENABLED`**: Enable/disable real-time streaming
+
+## 🧪 Testing
+
+### Backend Tests
+```bash
+cd backend
+pytest
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test
+```
+
+## 📚 API Documentation
+
+The backend provides comprehensive API documentation:
+
+- **Interactive Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI Schema**: http://localhost:8000/openapi.json
+
+### Key Endpoints
+
+- `POST /api/v1/chat` - Send chat message
+- `POST /api/v1/chat/stream` - Stream chat response
+- `GET /api/v1/journals` - List conversations
+- `GET /api/v1/journals/{id}` - Get specific conversation
+- `POST /api/v1/journals` - Save conversation
+- `DELETE /api/v1/journals/{id}` - Delete conversation
+
+## 🚀 Deployment
+
+### Backend Deployment
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Frontend Deployment
+```bash
+cd frontend
+npm run build
+npm start
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the [API documentation](http://localhost:8000/docs)
+2. Review the environment setup
+3. Check the logs for error messages
+4. Ensure your OpenAI API key is valid
+
+## 🎯 Roadmap
+
+- [ ] User authentication and multi-user support
+- [ ] Export conversations to PDF
+- [ ] Advanced search and filtering
+- [ ] Conversation categories and tags
+- [ ] Offline mode support
+- [ ] Mobile app (React Native)

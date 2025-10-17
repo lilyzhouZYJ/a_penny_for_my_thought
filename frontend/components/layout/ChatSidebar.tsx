@@ -42,7 +42,7 @@ const SidebarContent = React.memo(function SidebarContent({
       {/* Header */}
       <div className="p-4 space-y-4">
         <div>
-          <h1 className="text-xl font-bold">My Journal</h1>
+          <h1 className="text-xl font-bold">A Penny For My Thought</h1>
           <p className="text-sm text-muted-foreground">AI-powered journaling</p>
         </div>
         

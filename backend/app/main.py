@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting ThisIsMyJournal backend...")
+    logger.info("Starting A Penny For My Thought backend...")
     
     # Create storage directories
     settings.journals_directory.mkdir(parents=True, exist_ok=True)
@@ -37,12 +37,12 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("Shutting down backend...")
+    logger.info("Shutting down A Penny For My Thought backend...")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="LLM Journal Webapp API",
+    title="A Penny For My Thought API",
     description="Backend API for LLM-powered journaling application with RAG",
     version="1.0.0",
     lifespan=lifespan,
@@ -66,7 +66,7 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "service": "llm-journal-webapp-backend",
+        "service": "a-penny-for-my-thought-backend",
         "version": "1.0.0",
     }
 

@@ -6,7 +6,7 @@ import { ChatProvider } from '@/lib/context/ChatContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'My Journal - AI-Powered Journaling',
+  title: 'A Penny For My Thought - AI-Powered Journaling',
   description: 'An LLM-powered journaling web application with conversational interface',
 };
 
