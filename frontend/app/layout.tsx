@@ -1,23 +1,32 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ChatProvider } from '@/lib/context/ChatContext';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "LLM Journal - AI-Powered Journaling",
-  description: "Converse with AI and build a searchable journal of your thoughts and reflections",
+  title: 'My Journal - AI-Powered Journaling',
+  description: 'An LLM-powered journaling web application with conversational interface',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <ChatProvider>{children}</ChatProvider>
+      </body>
     </html>
   );
 }
-

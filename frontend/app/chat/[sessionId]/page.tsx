@@ -1,30 +1,40 @@
 'use client';
 
 /**
- * Home page - Main chat interface with sidebar.
+ * Dynamic chat session page - loads specific conversation.
  */
 
-import React, { useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { useChat } from '@/lib/context/ChatContext';
 
-export default function HomePage() {
+export default function ChatSessionPage() {
+  const params = useParams();
   const router = useRouter();
-  const { sessionId, clearChat } = useChat();
+  const { sessionId, loadSession, clearChat } = useChat();
+  const urlSessionId = params.sessionId as string;
 
-  const handleSelectConversation = useCallback(
-    (selectedSessionId: string) => {
-      // Navigate to the chat URL
+  // Load the session when the page loads
+  useEffect(() => {
+    if (urlSessionId && urlSessionId !== sessionId) {
+      loadSession(urlSessionId).catch((err) => {
+        console.error('Failed to load session:', err);
+        router.push('/');
+      });
+    }
+  }, [urlSessionId, sessionId, loadSession, router]);
+
+  const handleSelectConversation = React.useCallback(
+    async (selectedSessionId: string) => {
       router.push(`/chat/${selectedSessionId}`);
     },
     [router]
   );
 
-  const handleNewConversation = useCallback(() => {
+  const handleNewConversation = React.useCallback(() => {
     clearChat();
-    // Stay on home page for new conversations
     router.push('/');
   }, [clearChat, router]);
 
@@ -45,3 +55,4 @@ export default function HomePage() {
     </div>
   );
 }
+

@@ -7,7 +7,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Message } from '@/lib/types/chat';
 import { JournalMetadata } from '@/lib/types/journal';
-import { sendChatMessage } from '@/lib/api/chat';
+import { sendChatMessage, streamChatMessage } from '@/lib/api/chat';
 import { getJournal, saveJournal as saveJournalApi } from '@/lib/api/journals';
 
 interface ChatContextType {
@@ -15,11 +15,13 @@ interface ChatContextType {
   sessionId: string;
   messages: Message[];
   isLoading: boolean;
+  isStreaming: boolean;
+  streamingContent: string;
   error: string | null;
   currentJournalId: string | null;
   
   // Actions
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
   loadSession: (journalId: string) => Promise<void>;
   saveSession: () => Promise<JournalMetadata | null>;
   clearChat: () => void;
@@ -34,10 +36,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentJournalId, setCurrentJournalId] = useState<string | null>(null);
   
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, useStreaming: boolean = true) => {
     setIsLoading(true);
     setError(null);
     
@@ -53,19 +57,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Add user message to state immediately
       setMessages(prev => [...prev, userMessage]);
       
-      // Send to backend with full conversation history
-      const response = await sendChatMessage(
-        content,
-        sessionId,
-        [...messages, userMessage],  // Include new message in history
-        true  // use_rag
-      );
-      
-      // Add AI response to state
-      setMessages(prev => [...prev, response.message]);
-      
-      // If auto-saved and we don't have a journal ID yet, we should track it
-      // (Note: Backend returns metadata in response if needed)
+      // Try streaming first, fallback to non-streaming on error
+      if (useStreaming) {
+        try {
+          await handleStreamingMessage(content, userMessage);
+        } catch (streamError) {
+          console.warn('Streaming failed, falling back to non-streaming:', streamError);
+          await handleNonStreamingMessage(content, userMessage);
+        }
+      } else {
+        await handleNonStreamingMessage(content, userMessage);
+      }
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
@@ -76,7 +78,53 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingContent('');
     }
+  }, [messages, sessionId]);
+
+  const handleStreamingMessage = useCallback(async (content: string, userMessage: Message) => {
+    setIsStreaming(true);
+    setStreamingContent('');
+    
+    let fullContent = '';
+    
+    for await (const event of streamChatMessage(
+      content,
+      sessionId,
+      [...messages, userMessage],
+      true
+    )) {
+      if (event.type === 'token') {
+        fullContent += event.data.content;
+        setStreamingContent(fullContent);
+      } else if (event.type === 'done') {
+        // Create final AI message
+        const aiMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: fullContent,
+          timestamp: new Date().toISOString(),
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        setIsStreaming(false);
+        setStreamingContent('');
+      } else if (event.type === 'error') {
+        throw new Error(event.data.message || 'Streaming error');
+      }
+    }
+  }, [messages, sessionId]);
+
+  const handleNonStreamingMessage = useCallback(async (content: string, userMessage: Message) => {
+    const response = await sendChatMessage(
+      content,
+      sessionId,
+      [...messages, userMessage],
+      true
+    );
+    
+    setMessages(prev => [...prev, response.message]);
   }, [messages, sessionId]);
   
   const loadSession = useCallback(async (journalId: string) => {
@@ -143,6 +191,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     sessionId,
     messages,
     isLoading,
+    isStreaming,
+    streamingContent,
     error,
     currentJournalId,
     sendMessage,
