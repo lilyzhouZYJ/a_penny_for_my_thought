@@ -67,6 +67,7 @@ def get_journal_service() -> JournalService:
 
 def get_chat_service() -> ChatService:
     """Get ChatService instance."""
+    print("GET CHAT SERVICE")
     return ChatService(
         llm_service=get_llm_service(),
         rag_service=get_rag_service(),

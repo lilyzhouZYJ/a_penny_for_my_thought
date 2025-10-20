@@ -11,6 +11,7 @@ from app.services.journal_service import JournalService
 from app.services.llm_service import LLMService
 from app.services.rag_service import RAGService
 from app.utils.token_counter import TokenCounter
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class ChatService:
         self.llm_service = llm_service
         self.rag_service = rag_service
         self.journal_service = journal_service
-        self.token_counter = TokenCounter(model="gpt-4o")
+        self.token_counter = TokenCounter(model=settings.openai_model)
     
     async def send_message(
         self,

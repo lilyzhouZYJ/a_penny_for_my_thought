@@ -17,7 +17,17 @@ class TokenCounter:
         Args:
             model: Model name to get correct encoding
         """
-        self.encoding = tiktoken.encoding_for_model(model)
+        # Some newer model names may not be mapped in older tiktoken versions.
+        # Try model-specific encoding, then fall back to modern/general encodings.
+        try:
+            self.encoding = tiktoken.encoding_for_model(model)
+        except Exception:
+            try:
+                # Newer GPT-4.x/4o models typically use o200k_base
+                self.encoding = tiktoken.get_encoding("o200k_base")
+            except Exception:
+                # Broad fallback compatible with many chat models
+                self.encoding = tiktoken.get_encoding("cl100k_base")
     
     def count_tokens(self, text: str) -> int:
         """
