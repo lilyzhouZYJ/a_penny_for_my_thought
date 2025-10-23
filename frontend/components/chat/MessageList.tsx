@@ -34,9 +34,9 @@ export const MessageList = React.memo(function MessageList({
   if (messages.length === 0 && !isLoading && !isStreaming) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center text-muted-foreground">
-          <p className="text-lg mb-2">Start a conversation</p>
-          <p className="text-sm">
+        <div className="text-center text-claude-text-muted">
+          <p className="text-xl mb-2 font-medium">Start a conversation</p>
+          <p className="text-lg">
             Type a message below to begin journaling with AI
           </p>
         </div>
@@ -45,8 +45,8 @@ export const MessageList = React.memo(function MessageList({
   }
 
   return (
-    <ScrollArea className="flex-1 px-4">
-      <div className="max-w-4xl mx-auto py-4">
+    <ScrollArea className="flex-1 px-6">
+      <div className="max-w-4xl mx-auto py-6">
         {messages.map((message) => (
           <MessageComponent
             key={message.id}
@@ -65,13 +65,13 @@ export const MessageList = React.memo(function MessageList({
         
         {/* Loading indicator (non-streaming) */}
         {isLoading && !isStreaming && (
-          <div className="flex w-full mb-4 justify-start">
-            <div className="max-w-[80%] rounded-lg px-4 py-3 bg-gray-100 dark:bg-gray-800">
+          <div className="flex w-full mb-6 justify-start">
+            <div className="max-w-[80%] rounded-2xl px-4 py-3 claude-message-assistant">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150" />
-                <span className="text-sm text-gray-500 ml-2">AI is thinking...</span>
+                <div className="w-2 h-2 bg-claude-text-muted rounded-full animate-pulse" />
+                <div className="w-2 h-2 bg-claude-text-muted rounded-full animate-pulse delay-75" />
+                <div className="w-2 h-2 bg-claude-text-muted rounded-full animate-pulse delay-150" />
+                <span className="text-base text-claude-text-muted ml-2">AI is thinking...</span>
               </div>
             </div>
           </div>

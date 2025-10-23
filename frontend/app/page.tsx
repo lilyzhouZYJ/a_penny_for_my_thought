@@ -23,7 +23,7 @@ export default function HomePage() {
   );
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-claude-bg">
       {/* Sidebar - Hidden on mobile, shown on md+ */}
       <ChatSidebar
         onSelectConversation={handleSelectConversation}
@@ -34,7 +34,7 @@ export default function HomePage() {
       />
 
       {/* Main chat area - Full width on mobile, flex-1 on desktop */}
-      <main className="flex-1 w-full overflow-hidden">
+      <main className="flex-1 w-full overflow-hidden bg-claude-bg">
         <ChatInterface />
       </main>
     </div>

@@ -31,35 +31,23 @@ export const Message = React.memo(function Message({
   return (
     <div
       className={cn(
-        'flex w-full mb-4',
-        isUser ? 'justify-end' : 'justify-start'
+        'w-full mb-6',
+        isUser ? 'flex justify-start' : 'flex justify-start'
       )}
     >
       <div
         className={cn(
-          'max-w-[85%] sm:max-w-[80%] rounded-lg px-3 py-2 sm:px-4 sm:py-3',
+          'max-w-[85%] sm:max-w-[80%]',
           isUser
-            ? 'bg-blue-500 text-white'
-            : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+            ? 'text-claude-text prose prose-base max-w-none border-l-2 border-claude-light-accent pl-4' // User messages with subtle left border
+            : 'claude-message-assistant' // AI messages in chat bubbles
         )}
       >
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-sm font-semibold">
-            {isUser ? 'You' : 'AI'}
-          </span>
-          {showTimestamp && (
-            <span className="text-xs opacity-70">
-              {new Date(message.timestamp).toLocaleTimeString()}
-            </span>
-          )}
-        </div>
-        
         <div
           className={cn(
-            'prose prose-sm max-w-none',
             isUser
-              ? 'prose-invert'
-              : 'prose-gray dark:prose-invert'
+              ? 'prose-gray dark:prose-invert'
+              : 'prose prose-base max-w-none prose-gray dark:prose-invert'
           )}
         >
           <ReactMarkdown

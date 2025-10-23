@@ -45,25 +45,27 @@ export const ChatInput = React.memo(function ChatInput({
   );
 
   return (
-    <div className={cn('flex gap-2 p-4 border-t', className)}>
-      <Textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="min-h-[60px] max-h-[200px] resize-none text-base" // text-base prevents zoom on iOS
-        rows={1}
-      />
-      <Button
-        onClick={handleSend}
-        disabled={disabled || !input.trim()}
-        size="icon"
-        className="h-[60px] w-[60px] shrink-0 min-w-[44px] min-h-[44px]" // Touch-friendly minimum
-        aria-label="Send message"
-      >
-        <Send className="h-5 w-5" />
-      </Button>
+    <div className={cn('flex gap-3 p-6 border-t border-claude-border bg-claude-bg', className)}>
+      <div className="max-w-4xl mx-auto w-full flex gap-3">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="min-h-[60px] max-h-[200px] resize-none text-lg claude-input flex-1" // text-lg prevents zoom on iOS
+          rows={1}
+        />
+        <Button
+          onClick={handleSend}
+          disabled={disabled || !input.trim()}
+          size="icon"
+          className="h-[60px] w-[60px] shrink-0 min-w-[44px] min-h-[44px] claude-button" // Touch-friendly minimum
+          aria-label="Send message"
+        >
+          <Send className="h-5 w-5" />
+        </Button>
+      </div>
     </div>
   );
 });

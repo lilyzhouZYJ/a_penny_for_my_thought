@@ -100,7 +100,7 @@ export const ConversationList = React.memo(function ConversationList({
 
   if (conversations.length === 0) {
     return (
-      <div className={cn('p-4 text-sm text-muted-foreground text-center', className)}>
+      <div className={cn('p-4 text-sm text-claude-text-muted text-center', className)}>
         <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p>No conversations yet</p>
         <p className="text-xs mt-1">Start a new conversation to begin</p>
@@ -110,28 +110,26 @@ export const ConversationList = React.memo(function ConversationList({
 
   return (
     <ScrollArea className={cn('h-full', className)}>
-      <div className="space-y-2 p-2">
+      <div className="space-y-1 p-3">
         {conversations.map((conversation) => (
           <Card
             key={conversation.id}
             className={cn(
-              'p-3 hover:bg-accent transition-colors group',
-              currentSessionId === conversation.id && 'bg-accent border-primary'
+              'p-3 hover:bg-claude-hover transition-colors group cursor-pointer border-claude-border',
+              currentSessionId === conversation.id && 'bg-claude-hover border-claude-accent'
             )}
+            onClick={() => onSelect(conversation.id)}
           >
             <div className="flex items-start justify-between">
-              <div 
-                className="flex-1 cursor-pointer space-y-1"
-                onClick={() => onSelect(conversation.id)}
-              >
-                <h3 className="font-medium text-sm line-clamp-1">
+              <div className="flex-1 space-y-1">
+                <h3 className="font-medium text-sm line-clamp-1 text-claude-text">
                   {conversation.title || 'Untitled Conversation'}
                 </h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-claude-text-muted">
                   {new Date(conversation.date).toLocaleDateString()}
                 </p>
                 {conversation.message_count !== undefined && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-claude-text-muted">
                     {conversation.message_count} message{conversation.message_count !== 1 ? 's' : ''}
                   </p>
                 )}
@@ -140,7 +138,7 @@ export const ConversationList = React.memo(function ConversationList({
               <Button
                 variant="ghost"
                 size="sm"
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-destructive"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteConversation(conversation.id, conversation.title);

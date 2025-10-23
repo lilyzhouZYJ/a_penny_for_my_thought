@@ -28,7 +28,7 @@ export const NewConversationButton = React.memo(function NewConversationButton({
       size="default"
     >
       <Plus className="h-4 w-4 mr-2" />
-      New Conversation
+      <span className="text-sm">New Conversation</span>
     </Button>
   );
 });

@@ -42,19 +42,19 @@ const SidebarContent = React.memo(function SidebarContent({
   return (
     <>
       {/* Header */}
-      <div className="p-4 space-y-4">
-        <div>
-          <h1 className="text-xl font-bold">A Penny For My Thought</h1>
-          <p className="text-sm text-muted-foreground">AI-powered journaling</p>
+      <div className="p-6 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold text-claude-text">A Penny For My Thought</h1>
+          <p className="text-sm text-claude-text-muted">AI-powered journaling</p>
         </div>
         
         <NewConversationButton
           onClick={handleNewChat}
-          className="w-full min-h-[44px]" // Touch-friendly
+          className="w-full min-h-[48px] claude-button" // Touch-friendly
         />
       </div>
 
-      <Separator />
+      <Separator className="bg-claude-border" />
 
       {/* Conversations list */}
       <div className="flex-1 overflow-hidden">
@@ -107,7 +107,7 @@ export function ChatSidebar({
       {/* Desktop: Fixed Sidebar */}
       <aside
         className={cn(
-          'hidden md:flex flex-col h-full bg-background border-r',
+          'hidden md:flex flex-col h-full bg-claude-sidebar border-r border-claude-border',
           className
         )}
       >

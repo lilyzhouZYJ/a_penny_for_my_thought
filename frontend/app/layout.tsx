@@ -1,9 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Noto_Serif } from 'next/font/google';
 import './globals.css';
 import { ChatProvider } from '@/lib/context/ChatContext';
 
-const inter = Inter({ subsets: ['latin'] });
+const notoSerif = Noto_Serif({ 
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-noto-serif',
+});
 
 export const metadata: Metadata = {
   title: 'A Penny For My Thought - AI-Powered Journaling',
@@ -23,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={notoSerif.variable}>
+      <body className={`${notoSerif.className} font-serif antialiased`}>
         <ChatProvider>{children}</ChatProvider>
       </body>
     </html>
