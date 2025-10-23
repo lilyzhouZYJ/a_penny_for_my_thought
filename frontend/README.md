@@ -182,7 +182,8 @@ interface ChatContextType {
   // Actions
   sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
   loadSession: (journalId: string) => Promise<void>;
-  clearChat: () => void;
+  clearChat: () => string;
+  handleNewConversation: () => void;
   setError: (error: string | null) => void;
 }
 ```

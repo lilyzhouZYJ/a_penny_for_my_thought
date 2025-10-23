@@ -5,6 +5,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Message } from '@/lib/types/chat';
 import { JournalMetadata } from '@/lib/types/journal';
 import { sendChatMessage, streamChatMessage, loadChatHistory } from '@/lib/api/chat';
@@ -24,7 +25,8 @@ interface ChatContextType {
   // Actions
   sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
   loadSession: (sessionId: string) => Promise<void>;
-  clearChat: () => void;
+  clearChat: () => string;
+  handleNewConversation: () => void;
   
   // Utility
   setError: (error: string | null) => void;
@@ -34,6 +36,18 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
+  // Use router if available (in app), otherwise use a mock for tests
+  let router: any;
+  try {
+    router = useRouter();
+  } catch {
+    // Mock router for tests
+    router = {
+      push: (path: string) => {
+        console.log('Mock router push:', path);
+      }
+    };
+  }
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -160,16 +174,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
   
   const clearChat = useCallback(() => {
+    const newSessionId = crypto.randomUUID();
     setMessages([]);
-    setSessionId(crypto.randomUUID());
+    setSessionId(newSessionId);
     setCurrentJournalId(null);
     setError(null);
+    return newSessionId;
   }, []);
   
   const refreshConversations = useCallback(() => {
     // Trigger conversation list refresh by incrementing the trigger
     setConversationRefreshTrigger(prev => prev + 1);
   }, []);
+  
+  const handleNewConversation = useCallback(() => {
+    const newSessionId = clearChat();
+    router.push(`/chat/${newSessionId}`);
+  }, [clearChat, router]);
   
   const value: ChatContextType = {
     sessionId,
@@ -183,6 +204,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     sendMessage,
     loadSession,
     clearChat,
+    handleNewConversation,
     setError,
     refreshConversations,
   };

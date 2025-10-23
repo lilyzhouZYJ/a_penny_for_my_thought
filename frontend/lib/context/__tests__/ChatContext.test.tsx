@@ -211,13 +211,15 @@ describe('ChatContext', () => {
       expect(result.current.messages).toHaveLength(2);
 
       // Clear chat
+      let newSessionId: string;
       act(() => {
-        result.current.clearChat();
+        newSessionId = result.current.clearChat();
       });
 
-      // Should reset everything
+      // Should reset everything and return new session ID
       expect(result.current.messages).toHaveLength(0);
       expect(result.current.sessionId).not.toBe(oldSessionId);
+      expect(result.current.sessionId).toBe(newSessionId!);
       expect(result.current.currentJournalId).toBeNull();
       expect(result.current.error).toBeNull();
     });

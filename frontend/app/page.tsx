@@ -12,7 +12,7 @@ import { useChat } from '@/lib/context/ChatContext';
 
 export default function HomePage() {
   const router = useRouter();
-  const { sessionId, clearChat, conversationRefreshTrigger } = useChat();
+  const { sessionId, handleNewConversation, conversationRefreshTrigger } = useChat();
 
   const handleSelectConversation = useCallback(
     (selectedSessionId: string) => {
@@ -21,12 +21,6 @@ export default function HomePage() {
     },
     [router]
   );
-
-  const handleNewConversation = useCallback(() => {
-    clearChat();
-    // Stay on home page for new conversations
-    router.push('/');
-  }, [clearChat, router]);
 
   return (
     <div className="flex h-screen bg-background">

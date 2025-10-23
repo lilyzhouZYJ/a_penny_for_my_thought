@@ -37,16 +37,12 @@ export const ConversationList = React.memo(function ConversationList({
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Loading conversations from API...');
       const response = await listJournals(50, 0);
-      console.log('API response:', response);
       setConversations(response.journals);
-      console.log(`Loaded ${response.journals.length} conversations`);
     } catch (err) {
       console.error('Failed to load conversations:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load conversations';
       setError(errorMessage);
-      console.error('Error details:', errorMessage);
     } finally {
       setIsLoading(false);
     }

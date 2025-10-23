@@ -13,7 +13,7 @@ import { useChat } from '@/lib/context/ChatContext';
 export default function ChatSessionPage() {
   const params = useParams();
   const router = useRouter();
-  const { sessionId, loadSession, clearChat, conversationRefreshTrigger } = useChat();
+  const { sessionId, loadSession, handleNewConversation, conversationRefreshTrigger } = useChat();
   const urlSessionId = params.sessionId as string;
 
   // Load the session when the page loads
@@ -32,11 +32,6 @@ export default function ChatSessionPage() {
     },
     [router]
   );
-
-  const handleNewConversation = React.useCallback(() => {
-    clearChat();
-    router.push('/');
-  }, [clearChat, router]);
 
   return (
     <div className="flex h-screen bg-background">

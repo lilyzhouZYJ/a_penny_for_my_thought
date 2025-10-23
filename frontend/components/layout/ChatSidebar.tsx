@@ -68,7 +68,7 @@ const SidebarContent = React.memo(function SidebarContent({
   );
 });
 
-export const ChatSidebar = React.memo(function ChatSidebar({
+export function ChatSidebar({
   onSelectConversation,
   onNewConversation,
   currentSessionId,
@@ -120,5 +120,5 @@ export const ChatSidebar = React.memo(function ChatSidebar({
       </aside>
     </>
   );
-});
+}
 
