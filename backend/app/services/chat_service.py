@@ -8,6 +8,7 @@ from app.chains.prompts import (
 )
 from app.models import ChatResponse, Message, RetrievedContext, StreamEvent
 from app.services.journal_service import JournalService
+from app.storage.database import DatabaseStorage
 from app.services.llm_service import LLMService
 from app.services.rag_service import RAGService
 from app.utils.token_counter import TokenCounter
@@ -33,7 +34,8 @@ class ChatService:
         self,
         llm_service: LLMService,
         rag_service: RAGService,
-        journal_service: JournalService
+        journal_service: JournalService,
+        database_storage: DatabaseStorage
     ):
         """
         Initialize chat service.
@@ -42,10 +44,12 @@ class ChatService:
             llm_service: LLM service for completions
             rag_service: RAG service for context retrieval
             journal_service: Journal service for auto-saving
+            database_storage: Database storage for chat history
         """
         self.llm_service = llm_service
         self.rag_service = rag_service
         self.journal_service = journal_service
+        self.database_storage = database_storage
         self.token_counter = TokenCounter(model=settings.openai_model)
     
     async def send_message(
@@ -116,32 +120,45 @@ class ChatService:
             content=ai_response_content
         )
         
-        # Step 5: Auto-save conversation (like ChatGPT)
+        # Step 5: Auto-save conversation to database
         try:
             save_start = time.time()
             
             # Build complete conversation including new messages
-            user_message = Message(role="user", content=message)
-            complete_conversation = conversation_history + [user_message, ai_message]
+            # Note: conversation_history already includes the user message from frontend
+            complete_conversation = conversation_history + [ai_message]
             
-            # Determine journal_id if this is a continuation
+            # Generate title for new journals
+            title = None
             journal_id = None
-            if conversation_history:
-                # This is a continuation - find existing journal
-                # We'll use the first save's filename stored in metadata
-                # For now, let journal_service handle it
-                pass
             
-            await self.journal_service.save_journal(
-                session_id=session_id,
-                messages=complete_conversation,
-                journal_id=journal_id,
-                title=None  # Auto-generate for new, preserve for existing
-            )
+            if conversation_history:
+                # This is a continuation - find existing conversation
+                existing_journal = self.database_storage.get_journal_by_session_id(session_id)
+                if existing_journal:
+                    journal_id = existing_journal.id
+                    title = existing_journal.title
+                else:
+                    # Generate title for new conversation
+                    title = await self._generate_title(complete_conversation)
+            else:
+                # New conversation - generate title
+                title = await self._generate_title(complete_conversation)
+            
+            # Save to database via journal service (includes RAG indexing)
+            try:
+                await self.journal_service.save_journal(
+                    session_id=session_id,
+                    messages=complete_conversation,
+                    journal_id=journal_id,
+                    title=title
+                )
+            except Exception as e:
+                logger.warning(f"Journal service save failed: {e}")
             
             save_time_ms = int((time.time() - save_start) * 1000)
             auto_saved = True
-            logger.info(f"Auto-saved conversation in {save_time_ms}ms")
+            logger.info(f"Auto-saved journal in {save_time_ms}ms")
             
         except Exception as e:
             logger.error(f"Auto-save failed: {e}")
@@ -247,20 +264,42 @@ class ChatService:
                 content=ai_response_content
             )
             
-            # Step 5: Auto-save conversation
+            # Step 5: Auto-save conversation to database
             try:
-                user_message = Message(role="user", content=message)
-                complete_conversation = conversation_history + [user_message, ai_message]
+                # Build complete conversation including new messages
+                # Note: conversation_history already includes the user message from frontend
+                complete_conversation = conversation_history + [ai_message]
                 
-                await self.journal_service.save_journal(
-                    session_id=session_id,
-                    messages=complete_conversation,
-                    journal_id=None,
-                    title=None
-                )
+                # Generate title for new journals
+                title = None
+                journal_id = None
+                
+                if conversation_history:
+                    # This is a continuation - find existing conversation
+                    existing_journal = self.database_storage.get_journal_by_session_id(session_id)
+                    if existing_journal:
+                        journal_id = existing_journal.id
+                        title = existing_journal.title
+                    else:
+                        # Generate title for new conversation
+                        title = await self._generate_title(complete_conversation)
+                else:
+                    # New conversation - generate title
+                    title = await self._generate_title(complete_conversation)
+                
+                # Save to database via journal service (includes RAG indexing)
+                try:
+                    await self.journal_service.save_journal(
+                        session_id=session_id,
+                        messages=complete_conversation,
+                        journal_id=journal_id,
+                        title=title
+                    )
+                except Exception as e:
+                    logger.warning(f"Journal service save failed: {e}")
                 
                 auto_saved = True
-                logger.info("Auto-saved streaming conversation")
+                logger.info("Auto-saved streaming journal")
                 
             except Exception as e:
                 logger.error(f"Auto-save failed during streaming: {e}")
@@ -336,11 +375,12 @@ class ChatService:
             )
             messages.extend(history_messages)
         
-        # Add current message
-        messages.append({
-            "role": "user",
-            "content": current_message
-        })
+        # Add current message only if it's not already in the conversation history
+        if not conversation_history or conversation_history[-1].role != "user" or conversation_history[-1].content != current_message:
+            messages.append({
+                "role": "user",
+                "content": current_message
+            })
         
         total_tokens = self.token_counter.count_dict_messages_tokens(messages)
         logger.info(f"Built LLM prompt with {total_tokens} tokens ({len(messages)} messages)")
@@ -459,4 +499,52 @@ class ChatService:
         )
         
         return summary
+    
+    async def _generate_title(self, messages: List[Message]) -> str:
+        """
+        Generate title for conversation using LLM.
+        
+        Args:
+            messages: Conversation messages
+        
+        Returns:
+            Generated title
+        """
+        # Use first few messages for title generation
+        conversation_preview = ""
+        for msg in messages[:4]:  # First 2 exchanges
+            role_label = "User" if msg.role == "user" else "Assistant"
+            conversation_preview += f"{role_label}: {msg.content}\n"
+        
+        try:
+            title = await self.llm_service.generate_title(
+                conversation=conversation_preview,
+                max_length=50
+            )
+            return title
+        except Exception as e:
+            logger.warning(f"Title generation failed: {e}")
+            # Return default title
+            return "Untitled Conversation"
+    
+    async def load_chat_history(self, session_id: str) -> List[Message]:
+        """
+        Load chat history for a session from the database.
+        
+        Args:
+            session_id: Session UUID
+        
+        Returns:
+            List of messages in chronological order
+        """
+        try:
+            conversation = self.database_storage.get_journal_by_session_id(session_id)
+            if conversation:
+                return conversation.messages
+            else:
+                logger.info(f"No journal found for session: {session_id}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to load chat history for session {session_id}: {e}")
+            return []
 

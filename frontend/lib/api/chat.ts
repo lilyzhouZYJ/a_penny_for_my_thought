@@ -8,6 +8,7 @@ import {
   Message,
   StreamEvent,
 } from '@/lib/types/chat';
+import { JournalMetadata } from '@/lib/types/journal';
 
 import { config } from '@/lib/config';
 
@@ -58,6 +59,7 @@ export async function sendChatMessage(
 
   return await response.json();
 }
+
 
 /**
  * Stream chat message response using Server-Sent Events.
@@ -138,3 +140,86 @@ export async function* streamChatMessage(
   }
 }
 
+/**
+ * Load chat history for a session.
+ * 
+ * @param sessionId - Session UUID
+ * @returns List of messages in chronological order
+ */
+export async function loadChatHistory(sessionId: string): Promise<Message[]> {
+  const response = await fetch(`${API_URL}/api/v1/chat/history/${sessionId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      detail: 'Failed to load chat history',
+    }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * List all journals with pagination.
+ * 
+ * @param limit - Maximum number of journals to return
+ * @param offset - Number of journals to skip
+ * @param sortBy - Sort field ('created_at' or 'updated_at')
+ * @returns Object with journals list and pagination info
+ */
+export async function listJournals(
+  limit: number = 50,
+  offset: number = 0,
+  sortBy: string = 'created_at'
+): Promise<{ journals: JournalMetadata[]; total: number; limit: number; offset: number }> {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+    sort_by: sortBy,
+  });
+
+  const response = await fetch(`${API_URL}/api/v1/chat/journals?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      detail: 'Failed to list journals',
+    }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Delete a journal by ID.
+ * 
+ * @param journalId - The ID of the journal to delete
+ * @returns Success message
+ */
+export async function deleteJournal(journalId: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/api/v1/chat/journals/${journalId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      detail: 'Failed to delete journal',
+    }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return await response.json();
+}

@@ -22,9 +22,8 @@ async def lifespan(app: FastAPI):
     logger.info("Starting A Penny For My Thought backend...")
     
     # Create storage directories
-    settings.journals_directory.mkdir(parents=True, exist_ok=True)
     settings.vector_db_directory.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Created storage directories: {settings.journals_directory}, {settings.vector_db_directory}")
+    logger.info(f"Created storage directory: {settings.vector_db_directory}")
     
     # Validate OpenAI API key
     if not settings.openai_api_key or settings.openai_api_key == "sk-your-api-key-here":

@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     
     # Storage Configuration
-    journals_directory: Path = Path("./journals")
     vector_db_directory: Path = Path("./chroma_db")
+    database_path: Path = Path("./chat_history.db")
     
     # RAG Configuration
     rag_top_k: int = 5

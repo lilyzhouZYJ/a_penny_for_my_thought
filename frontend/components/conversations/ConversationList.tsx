@@ -10,53 +10,77 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { JournalMetadata } from '@/lib/types/journal';
-import { getAllJournals } from '@/lib/api/journals';
+import { listJournals, deleteJournal } from '@/lib/api/chat';
 import { cn } from '@/lib/utils';
-import { FileText } from 'lucide-react';
+import { FileText, Trash2 } from 'lucide-react';
 import { parseApiError } from '@/lib/utils/error-handlers';
+import { Button } from '@/components/ui/button';
 
 interface ConversationListProps {
   onSelect: (sessionId: string) => void;
   currentSessionId?: string;
   className?: string;
+  refreshTrigger?: number; // External trigger to refresh conversations
 }
 
 export const ConversationList = React.memo(function ConversationList({
   onSelect,
   currentSessionId,
   className,
+  refreshTrigger,
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<JournalMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await getAllJournals(50, 0);
+      console.log('Loading conversations from API...');
+      const response = await listJournals(50, 0);
+      console.log('API response:', response);
       setConversations(response.journals);
+      console.log(`Loaded ${response.journals.length} conversations`);
     } catch (err) {
       console.error('Failed to load conversations:', err);
-      setError('Failed to load conversations');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load conversations';
+      setError(errorMessage);
+      console.error('Error details:', errorMessage);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  const handleDeleteConversation = useCallback(async (conversationId: string, conversationTitle: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${conversationTitle}"?\n\nThis action cannot be undone and will permanently remove all messages in this conversation.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await deleteJournal(conversationId);
+      console.log(`Deleted conversation: ${conversationTitle}`);
+      
+      // Refresh the conversation list by reloading
+      loadConversations();
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+      setError('Failed to delete conversation');
+    }
+  }, [loadConversations]);
+
   useEffect(() => {
     loadConversations();
-  }, [loadConversations, refreshKey]);
+  }, [loadConversations]);
 
-  // Auto-refresh every 5 seconds to pick up new conversations
+  // Refresh when external trigger changes (e.g., new conversation created)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshKey(prev => prev + 1);
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    if (refreshTrigger !== undefined) {
+      loadConversations();
+    }
+  }, [refreshTrigger, loadConversations]);
 
   if (isLoading) {
     return (
@@ -95,23 +119,40 @@ export const ConversationList = React.memo(function ConversationList({
           <Card
             key={conversation.id}
             className={cn(
-              'p-3 cursor-pointer hover:bg-accent transition-colors',
+              'p-3 hover:bg-accent transition-colors group',
               currentSessionId === conversation.id && 'bg-accent border-primary'
             )}
-            onClick={() => onSelect(conversation.id)}
           >
-            <div className="space-y-1">
-              <h3 className="font-medium text-sm line-clamp-1">
-                {conversation.title || 'Untitled Conversation'}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {new Date(conversation.date).toLocaleDateString()}
-              </p>
-              {conversation.message_count !== undefined && (
+            <div className="flex items-start justify-between">
+              <div 
+                className="flex-1 cursor-pointer space-y-1"
+                onClick={() => onSelect(conversation.id)}
+              >
+                <h3 className="font-medium text-sm line-clamp-1">
+                  {conversation.title || 'Untitled Conversation'}
+                </h3>
                 <p className="text-xs text-muted-foreground">
-                  {conversation.message_count} message{conversation.message_count !== 1 ? 's' : ''}
+                  {new Date(conversation.date).toLocaleDateString()}
                 </p>
-              )}
+                {conversation.message_count !== undefined && (
+                  <p className="text-xs text-muted-foreground">
+                    {conversation.message_count} message{conversation.message_count !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteConversation(conversation.id, conversation.title);
+                }}
+                title="Delete conversation"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
             </div>
           </Card>
         ))}

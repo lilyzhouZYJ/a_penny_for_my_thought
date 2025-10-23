@@ -7,8 +7,8 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Message } from '@/lib/types/chat';
 import { JournalMetadata } from '@/lib/types/journal';
-import { sendChatMessage, streamChatMessage } from '@/lib/api/chat';
-import { getJournal, saveJournal as saveJournalApi } from '@/lib/api/journals';
+import { sendChatMessage, streamChatMessage, loadChatHistory } from '@/lib/api/chat';
+import { getJournal } from '@/lib/api/journals';
 
 interface ChatContextType {
   // State
@@ -19,15 +19,16 @@ interface ChatContextType {
   streamingContent: string;
   error: string | null;
   currentJournalId: string | null;
+  conversationRefreshTrigger: number;
   
   // Actions
   sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
-  loadSession: (journalId: string) => Promise<void>;
-  saveSession: () => Promise<JournalMetadata | null>;
+  loadSession: (sessionId: string) => Promise<void>;
   clearChat: () => void;
   
   // Utility
   setError: (error: string | null) => void;
+  refreshConversations: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -40,12 +41,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentJournalId, setCurrentJournalId] = useState<string | null>(null);
+  const [conversationRefreshTrigger, setConversationRefreshTrigger] = useState(0);
   
   const sendMessage = useCallback(async (content: string, useStreaming: boolean = true) => {
     setIsLoading(true);
     setError(null);
     
     try {
+      // Check if this is the first message before adding it
+      const wasFirstMessage = messages.length === 0;
+      
       // Create user message
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -54,25 +59,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         timestamp: new Date().toISOString(),
       };
       
-      // Add user message to state immediately
-      setMessages(prev => [...prev, userMessage]);
+      // Add user message to state so that it displays in the chat interface
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
       
       // Try streaming first, fallback to non-streaming on error
       if (useStreaming) {
         try {
-          await handleStreamingMessage(content, userMessage);
+          await handleStreamingMessage(content, updatedMessages);
         } catch (streamError) {
-          console.warn('Streaming failed, falling back to non-streaming:', streamError);
-          await handleNonStreamingMessage(content, userMessage);
+          await handleNonStreamingMessage(content, updatedMessages);
         }
       } else {
-        await handleNonStreamingMessage(content, userMessage);
+        await handleNonStreamingMessage(content, updatedMessages);
+      }
+      
+      // If this was the first message in a new conversation, refresh the conversation list
+      if (wasFirstMessage) {
+        setConversationRefreshTrigger(prev => prev + 1);
       }
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
       setError(errorMessage);
-      console.error('Send message error:', err);
       
       // Remove the user message on error
       setMessages(prev => prev.slice(0, -1));
@@ -83,7 +92,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [messages, sessionId]);
 
-  const handleStreamingMessage = useCallback(async (content: string, userMessage: Message) => {
+  const handleStreamingMessage = useCallback(async (content: string, conversationHistory: Message[]) => {
     setIsStreaming(true);
     setStreamingContent('');
     
@@ -92,7 +101,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     for await (const event of streamChatMessage(
       content,
       sessionId,
-      [...messages, userMessage],
+      conversationHistory,
       true
     )) {
       if (event.type === 'token') {
@@ -107,6 +116,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           timestamp: new Date().toISOString(),
         };
         
+        // Add the AI message to the conversation history
         setMessages(prev => [...prev, aiMessage]);
         setIsStreaming(false);
         setStreamingContent('');
@@ -114,77 +124,51 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         throw new Error(event.data.message || 'Streaming error');
       }
     }
-  }, [messages, sessionId]);
+  }, [sessionId]);
 
-  const handleNonStreamingMessage = useCallback(async (content: string, userMessage: Message) => {
+  const handleNonStreamingMessage = useCallback(async (content: string, conversationHistory: Message[]) => {
     const response = await sendChatMessage(
       content,
       sessionId,
-      [...messages, userMessage],
+      conversationHistory,
       true
     );
     
+    // Add the AI message to the conversation history
     setMessages(prev => [...prev, response.message]);
-  }, [messages, sessionId]);
+  }, [sessionId]);
   
-  const loadSession = useCallback(async (journalId: string) => {
+  const loadSession = useCallback(async (sessionIdToLoad: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Fetch journal from backend
-      const journal = await getJournal(journalId);
+      // Load chat history from database
+      const historyMessages = await loadChatHistory(sessionIdToLoad);
       
-      // Set state from loaded journal
-      setMessages(journal.messages);
-      setSessionId(journal.id);  // Use journal's session ID
-      setCurrentJournalId(journalId);
+      // Set state from loaded history
+      setMessages(historyMessages);
+      setSessionId(sessionIdToLoad);
+      setCurrentJournalId(sessionIdToLoad);  // Use session ID as journal ID for database storage
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load session';
       setError(errorMessage);
-      console.error('Load session error:', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
-  
-  const saveSession = useCallback(async (): Promise<JournalMetadata | null> => {
-    if (messages.length === 0) {
-      setError('No messages to save');
-      return null;
-    }
-    
-    setError(null);
-    
-    try {
-      const metadata = await saveJournalApi(
-        sessionId,
-        messages,
-        currentJournalId,  // Update existing if we have a journal ID
-        null  // Auto-generate title
-      );
-      
-      // Update current journal ID if this was a new save
-      if (!currentJournalId) {
-        setCurrentJournalId(metadata.filename);
-      }
-      
-      return metadata;
-      
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save session';
-      setError(errorMessage);
-      console.error('Save session error:', err);
-      return null;
-    }
-  }, [sessionId, messages, currentJournalId]);
   
   const clearChat = useCallback(() => {
     setMessages([]);
     setSessionId(crypto.randomUUID());
     setCurrentJournalId(null);
     setError(null);
+  }, []);
+  
+  const refreshConversations = useCallback(() => {
+    // Trigger conversation list refresh by incrementing the trigger
+    setConversationRefreshTrigger(prev => prev + 1);
   }, []);
   
   const value: ChatContextType = {
@@ -195,11 +179,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     streamingContent,
     error,
     currentJournalId,
+    conversationRefreshTrigger,
     sendMessage,
     loadSession,
-    saveSession,
     clearChat,
     setError,
+    refreshConversations,
   };
   
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

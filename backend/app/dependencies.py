@@ -5,16 +5,16 @@ from app.services.chat_service import ChatService
 from app.services.journal_service import JournalService
 from app.services.llm_service import LLMService
 from app.services.rag_service import RAGService
-from app.storage.file_storage import FileStorage
+from app.storage.database import DatabaseStorage
 from app.storage.vector_storage import VectorStorage
 from app.utils.embeddings import EmbeddingManager
 
 # Storage layer (singletons)
 
 @lru_cache()
-def get_file_storage() -> FileStorage:
-    """Get FileStorage singleton instance."""
-    return FileStorage(base_directory=settings.journals_directory)
+def get_database_storage() -> DatabaseStorage:
+    """Get DatabaseStorage singleton instance."""
+    return DatabaseStorage(db_path=settings.database_path)
 
 
 @lru_cache()
@@ -58,7 +58,7 @@ def get_rag_service() -> RAGService:
 def get_journal_service() -> JournalService:
     """Get JournalService instance."""
     return JournalService(
-        file_storage=get_file_storage(),
+        database_storage=get_database_storage(),
         vector_storage=get_vector_storage(),
         rag_service=get_rag_service(),
         llm_service=get_llm_service()
@@ -71,6 +71,7 @@ def get_chat_service() -> ChatService:
     return ChatService(
         llm_service=get_llm_service(),
         rag_service=get_rag_service(),
-        journal_service=get_journal_service()
+        journal_service=get_journal_service(),
+        database_storage=get_database_storage()
     )
 

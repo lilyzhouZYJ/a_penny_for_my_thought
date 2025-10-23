@@ -14,12 +14,20 @@ jest.mock('@/lib/api/chat');
 jest.mock('@/lib/api/journals');
 
 const mockSendChatMessage = chatApi.sendChatMessage as jest.MockedFunction<typeof chatApi.sendChatMessage>;
+const mockStreamChatMessage = chatApi.streamChatMessage as jest.MockedFunction<typeof chatApi.streamChatMessage>;
+const mockLoadChatHistory = chatApi.loadChatHistory as jest.MockedFunction<typeof chatApi.loadChatHistory>;
 const mockGetJournal = journalsApi.getJournal as jest.MockedFunction<typeof journalsApi.getJournal>;
-const mockSaveJournal = journalsApi.saveJournal as jest.MockedFunction<typeof journalsApi.saveJournal>;
 
 describe('ChatContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Mock streamChatMessage to return a simple async generator
+    mockStreamChatMessage.mockImplementation(async function* () {
+      yield { type: 'token', data: { content: 'AI ' } };
+      yield { type: 'token', data: { content: 'response' } };
+      yield { type: 'done', data: { metadata: { auto_saved: true } } };
+    });
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -93,14 +101,14 @@ describe('ChatContext', () => {
 
       const { result } = renderHook(() => useChat(), { wrapper });
 
-      // Send first message
+      // Send first message (non-streaming)
       await act(async () => {
-        await result.current.sendMessage('First message');
+        await result.current.sendMessage('First message', false);
       });
 
-      // Send second message
+      // Send second message (non-streaming)
       await act(async () => {
-        await result.current.sendMessage('Second message');
+        await result.current.sendMessage('Second message', false);
       });
 
       // Check that second call included conversation history
@@ -111,6 +119,10 @@ describe('ChatContext', () => {
     });
 
     it('should handle API errors gracefully', async () => {
+      // Mock both streaming and non-streaming to fail
+      mockStreamChatMessage.mockImplementation(async function* () {
+        throw new Error('API Error');
+      });
       mockSendChatMessage.mockRejectedValue(new Error('API Error'));
 
       const { result } = renderHook(() => useChat(), { wrapper });
@@ -129,113 +141,48 @@ describe('ChatContext', () => {
 
   describe('loadSession', () => {
     it('should load journal and update state', async () => {
-      const mockJournal = {
-        id: 'journal-1',
-        filename: 'test.md',
-        title: 'Test Journal',
-        date: new Date().toISOString(),
-        message_count: 2,
-        duration_seconds: null,
-        messages: [
-          {
-            id: 'msg-1',
-            role: 'user' as const,
-            content: 'Hello',
-            timestamp: new Date().toISOString(),
-          },
-          {
-            id: 'msg-2',
-            role: 'assistant' as const,
-            content: 'Hi there!',
-            timestamp: new Date().toISOString(),
-          },
-        ],
-        raw_content: '# Test',
-      };
+      const mockMessages = [
+        {
+          id: 'msg-1',
+          role: 'user' as const,
+          content: 'Hello',
+          timestamp: new Date().toISOString(),
+        },
+        {
+          id: 'msg-2',
+          role: 'assistant' as const,
+          content: 'Hi there!',
+          timestamp: new Date().toISOString(),
+        },
+      ];
 
-      mockGetJournal.mockResolvedValue(mockJournal);
+      mockLoadChatHistory.mockResolvedValue(mockMessages);
 
       const { result } = renderHook(() => useChat(), { wrapper });
 
       await act(async () => {
-        await result.current.loadSession('test.md');
+        await result.current.loadSession('test-session-id');
       });
 
       // Should load messages
       expect(result.current.messages).toHaveLength(2);
       expect(result.current.messages[0].content).toBe('Hello');
       expect(result.current.messages[1].content).toBe('Hi there!');
-      expect(result.current.currentJournalId).toBe('test.md');
+      expect(result.current.currentJournalId).toBe('test-session-id');
       expect(result.current.isLoading).toBe(false);
     });
 
     it('should handle load errors', async () => {
-      mockGetJournal.mockRejectedValue(new Error('Journal not found'));
+      mockLoadChatHistory.mockRejectedValue(new Error('Journal not found'));
 
       const { result } = renderHook(() => useChat(), { wrapper });
 
       await act(async () => {
-        await result.current.loadSession('nonexistent.md');
+        await result.current.loadSession('nonexistent-session');
       });
 
       expect(result.current.error).toBe('Journal not found');
       expect(result.current.messages).toHaveLength(0);
-    });
-  });
-
-  describe('saveSession', () => {
-    it('should save conversation', async () => {
-      const mockMetadata = {
-        id: 'journal-1',
-        filename: 'test.md',
-        title: 'Test',
-        date: new Date().toISOString(),
-        message_count: 2,
-        duration_seconds: null,
-      };
-
-      mockSaveJournal.mockResolvedValue(mockMetadata);
-      mockSendChatMessage.mockResolvedValue({
-        message: {
-          id: 'ai-1',
-          role: 'assistant' as const,
-          content: 'Response',
-          timestamp: new Date().toISOString(),
-        },
-        retrieved_context: [],
-        metadata: {},
-        auto_saved: true,
-      });
-
-      const { result } = renderHook(() => useChat(), { wrapper });
-
-      // Add some messages first
-      await act(async () => {
-        await result.current.sendMessage('Hello');
-      });
-
-      // Save session
-      let savedMetadata;
-      await act(async () => {
-        savedMetadata = await result.current.saveSession();
-      });
-
-      expect(mockSaveJournal).toHaveBeenCalled();
-      expect(savedMetadata).toEqual(mockMetadata);
-      expect(result.current.currentJournalId).toBe('test.md');
-    });
-
-    it('should not save empty conversation', async () => {
-      const { result } = renderHook(() => useChat(), { wrapper });
-
-      let savedMetadata;
-      await act(async () => {
-        savedMetadata = await result.current.saveSession();
-      });
-
-      expect(mockSaveJournal).not.toHaveBeenCalled();
-      expect(savedMetadata).toBeNull();
-      expect(result.current.error).toBe('No messages to save');
     });
   });
 

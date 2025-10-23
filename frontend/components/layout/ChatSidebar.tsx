@@ -19,12 +19,14 @@ interface ChatSidebarProps {
   onNewConversation: () => void;
   currentSessionId?: string;
   className?: string;
+  conversationRefreshTrigger?: number;
 }
 
 const SidebarContent = React.memo(function SidebarContent({
   onSelectConversation,
   onNewConversation,
   currentSessionId,
+  conversationRefreshTrigger,
   onItemClick,
 }: ChatSidebarProps & { onItemClick?: () => void }) {
   const handleSelect = (sessionId: string) => {
@@ -59,6 +61,7 @@ const SidebarContent = React.memo(function SidebarContent({
         <ConversationList
           onSelect={handleSelect}
           currentSessionId={currentSessionId}
+          refreshTrigger={conversationRefreshTrigger}
         />
       </div>
     </>
@@ -70,6 +73,7 @@ export const ChatSidebar = React.memo(function ChatSidebar({
   onNewConversation,
   currentSessionId,
   className,
+  conversationRefreshTrigger,
 }: ChatSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -93,6 +97,7 @@ export const ChatSidebar = React.memo(function ChatSidebar({
               onSelectConversation={onSelectConversation}
               onNewConversation={onNewConversation}
               currentSessionId={currentSessionId}
+              conversationRefreshTrigger={conversationRefreshTrigger}
               onItemClick={() => setMobileOpen(false)}
             />
           </SheetContent>
@@ -110,6 +115,7 @@ export const ChatSidebar = React.memo(function ChatSidebar({
           onSelectConversation={onSelectConversation}
           onNewConversation={onNewConversation}
           currentSessionId={currentSessionId}
+          conversationRefreshTrigger={conversationRefreshTrigger}
         />
       </aside>
     </>

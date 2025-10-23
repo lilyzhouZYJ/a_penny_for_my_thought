@@ -13,7 +13,7 @@ import { useChat } from '@/lib/context/ChatContext';
 export default function ChatSessionPage() {
   const params = useParams();
   const router = useRouter();
-  const { sessionId, loadSession, clearChat } = useChat();
+  const { sessionId, loadSession, clearChat, conversationRefreshTrigger } = useChat();
   const urlSessionId = params.sessionId as string;
 
   // Load the session when the page loads
@@ -46,6 +46,7 @@ export default function ChatSessionPage() {
         onNewConversation={handleNewConversation}
         currentSessionId={sessionId}
         className="w-80 shrink-0"
+        conversationRefreshTrigger={conversationRefreshTrigger}
       />
 
       {/* Main chat area - Full width on mobile, flex-1 on desktop */}

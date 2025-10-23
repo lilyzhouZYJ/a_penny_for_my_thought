@@ -12,7 +12,7 @@ import { useChat } from '@/lib/context/ChatContext';
 
 export default function HomePage() {
   const router = useRouter();
-  const { sessionId, clearChat } = useChat();
+  const { sessionId, clearChat, conversationRefreshTrigger } = useChat();
 
   const handleSelectConversation = useCallback(
     (selectedSessionId: string) => {
@@ -36,6 +36,7 @@ export default function HomePage() {
         onNewConversation={handleNewConversation}
         currentSessionId={sessionId}
         className="w-80 shrink-0"
+        conversationRefreshTrigger={conversationRefreshTrigger}
       />
 
       {/* Main chat area - Full width on mobile, flex-1 on desktop */}

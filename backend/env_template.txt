@@ -6,8 +6,8 @@ OPENAI_MODEL=gpt-4-turbo-preview
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
 # Optional: Storage Paths
-JOURNALS_DIRECTORY=./journals
 VECTOR_DB_DIRECTORY=./chroma_db
+DATABASE_PATH=./chat_history.db
 
 # Optional: RAG Configuration
 RAG_TOP_K=5
