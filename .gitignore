@@ -11,7 +11,7 @@ venv/
 .env.local
 
 # Project data directories
-journals/
+*.db
 chroma_db/
 
 # Node.js (will exist after npm install)

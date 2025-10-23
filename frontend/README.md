@@ -1,6 +1,6 @@
 # Frontend - A Penny For My Thought Web App
 
-Next.js 14 frontend for the AI-powered journaling web application.
+Next.js 14 frontend for the AI-powered journaling web application. Features a responsive chat interface with real-time streaming, conversation management, and mobile-optimized design using modern React patterns and shadcn/ui components.
 
 ## 🚀 Quick Start
 
@@ -57,34 +57,35 @@ frontend/
 │   └── globals.css        # Global styles
 ├── components/            # React components
 │   ├── chat/             # Chat interface components
-│   │   ├── ChatInterface.tsx    # Main chat interface
-│   │   ├── ChatInput.tsx        # Message input
-│   │   ├── Message.tsx          # Individual message
-│   │   ├── MessageList.tsx      # Message list
-│   │   └── StreamingMessage.tsx # Streaming message display
+│   │   ├── ChatInterface.tsx    # Main chat interface with error handling
+│   │   ├── ChatInput.tsx        # Message input with auto-resize
+│   │   ├── Message.tsx          # Individual message with markdown
+│   │   ├── MessageList.tsx      # Scrollable message list
+│   │   └── StreamingMessage.tsx # Real-time streaming display
 │   ├── conversations/     # Conversation management
-│   │   ├── ConversationList.tsx # Past conversations
-│   │   └── NewConversationButton.tsx
+│   │   ├── ConversationList.tsx # Past conversations with auto-refresh
+│   │   └── NewConversationButton.tsx # New conversation trigger
 │   ├── layout/           # Layout components
-│   │   └── ChatSidebar.tsx # Responsive sidebar
+│   │   └── ChatSidebar.tsx # Responsive sidebar/drawer
 │   ├── shared/           # Shared UI components
-│   │   ├── ErrorMessage.tsx    # Error display
-│   │   └── LoadingSpinner.tsx  # Loading indicator
+│   │   ├── ErrorMessage.tsx    # Error display with retry
+│   │   └── LoadingSpinner.tsx  # Loading indicators
 │   └── ui/               # shadcn/ui components
 ├── lib/                  # Utilities and API clients
 │   ├── api/             # API client functions
-│   │   ├── chat.ts      # Chat API client
-│   │   └── journals.ts  # Journal API client
+│   │   ├── chat.ts       # Chat API with streaming support
+│   │   └── journals.ts   # Journal management API
 │   ├── context/         # React Context
-│   │   └── ChatContext.tsx # Global chat state
+│   │   └── ChatContext.tsx # Global chat state management
 │   ├── types/           # TypeScript types
 │   │   ├── chat.ts      # Chat-related types
 │   │   └── journal.ts   # Journal-related types
 │   ├── config.ts        # Configuration
-│   └── utils.ts         # Utility functions
+│   └── utils/           # Utility functions
+│       └── error-handlers.ts # Error parsing and handling
 ├── __tests__/           # Test setup
 ├── package.json         # Dependencies and scripts
-├── tailwind.config.js   # Tailwind CSS configuration
+├── tailwind.config.ts   # Tailwind CSS configuration
 ├── jest.config.js       # Jest test configuration
 └── README.md           # This file
 ```
@@ -109,38 +110,38 @@ npm test ChatContext.test.tsx
 
 ### Test Structure
 
-- `ChatContext.test.tsx` - Context and hook tests
-- All components are tested with React Testing Library
+- `ChatContext.test.tsx` - Context and hook tests with React Testing Library
+- All components tested with comprehensive user interaction scenarios
 
 ## 🎨 UI Components
 
 ### Chat Components
 
-- **ChatInterface**: Main chat interface with error handling
-- **ChatInput**: Message input with auto-resize and keyboard shortcuts
-- **Message**: Individual message display with markdown and syntax highlighting
-- **MessageList**: Scrollable message list with auto-scroll
-- **StreamingMessage**: Real-time streaming message display
+- **ChatInterface**: Main chat interface with comprehensive error handling and retry logic
+- **ChatInput**: Message input with auto-resize, keyboard shortcuts (Enter/Shift+Enter), and disabled states
+- **Message**: Individual message display with markdown rendering and syntax highlighting
+- **MessageList**: Scrollable message list with auto-scroll to bottom and loading indicators
+- **StreamingMessage**: Real-time streaming message display with smooth character-by-character updates
 
 ### Layout Components
 
-- **ChatSidebar**: Responsive sidebar (desktop) / drawer (mobile)
-- **ConversationList**: List of past conversations with auto-refresh
+- **ChatSidebar**: Responsive sidebar (desktop) / drawer (mobile) with touch-friendly navigation
+- **ConversationList**: List of past conversations with auto-refresh, delete functionality, and loading states
 
 ### Shared Components
 
-- **ErrorMessage**: Error display with retry/dismiss options
-- **LoadingSpinner**: Loading indicator with size variants
+- **ErrorMessage**: Error display with retry/dismiss options and user-friendly error parsing
+- **LoadingSpinner**: Loading indicator with size variants and text support
 
 ### shadcn/ui Components
 
-- **Button**: Various button styles and sizes
-- **Card**: Container component for content
-- **Input**: Form input component
-- **ScrollArea**: Custom scrollable container
-- **Separator**: Visual separator
-- **Sheet**: Mobile drawer component
-- **Textarea**: Multi-line text input
+- **Button**: Various button styles, sizes, and variants with proper accessibility
+- **Card**: Container component for content with header, content, and footer sections
+- **Input**: Form input component with proper styling and focus states
+- **ScrollArea**: Custom scrollable container with smooth scrolling
+- **Separator**: Visual separator with horizontal and vertical variants
+- **Sheet**: Mobile drawer component with backdrop and animations
+- **Textarea**: Multi-line text input with auto-resize functionality
 
 ## 📱 Responsive Design
 
@@ -151,16 +152,18 @@ npm test ChatContext.test.tsx
 
 ### Mobile Features
 
-- **Hamburger Menu**: Slide-out drawer for navigation
-- **Touch-Friendly**: 44px minimum tap targets
-- **No Zoom**: Prevents unwanted zooming on iOS
-- **Full-Width Messages**: Optimized message display
+- **Hamburger Menu**: Slide-out drawer for navigation with smooth animations
+- **Touch-Friendly**: 44px minimum tap targets for accessibility
+- **No Zoom**: Prevents unwanted zooming on iOS devices
+- **Full-Width Messages**: Optimized message display for mobile screens
+- **Swipe Gestures**: Natural mobile interaction patterns
 
 ### Desktop Features
 
-- **Fixed Sidebar**: Always visible navigation
-- **Split Layout**: Sidebar + main content
-- **Hover Effects**: Interactive elements
+- **Fixed Sidebar**: Always visible navigation with conversation list
+- **Split Layout**: Sidebar + main content area
+- **Hover Effects**: Interactive elements with smooth transitions
+- **Keyboard Shortcuts**: Enhanced productivity with keyboard navigation
 
 ## 🔄 State Management
 
@@ -190,10 +193,11 @@ interface ChatContextType {
 
 ### Key Features
 
-- **Auto-save**: Conversations automatically saved after each message
-- **Streaming**: Real-time message streaming with fallback
-- **Error Handling**: Comprehensive error handling with retry
-- **URL Routing**: Shareable conversation URLs
+- **Auto-save**: Conversations automatically saved after each message exchange
+- **Streaming**: Real-time message streaming with automatic fallback to non-streaming
+- **Error Handling**: Comprehensive error handling with user-friendly messages and retry logic
+- **URL Routing**: Shareable conversation URLs with deep linking support
+- **Memory Management**: Efficient state management with React.memo and useCallback optimizations
 
 ## 🌐 API Integration
 
@@ -228,9 +232,10 @@ const metadata = await saveJournal(sessionId, messages, journalId);
 
 ### Real-time Streaming
 
-- **Server-Sent Events**: Real-time token streaming
-- **Fallback**: Automatic fallback to non-streaming on errors
-- **Smooth UX**: Character-by-character response display
+- **Server-Sent Events**: Real-time token streaming with automatic reconnection
+- **Fallback**: Automatic fallback to non-streaming on errors or network issues
+- **Smooth UX**: Character-by-character response display with loading states
+- **Error Recovery**: Graceful handling of streaming interruptions
 
 ### Auto-save
 
@@ -246,9 +251,10 @@ const metadata = await saveJournal(sessionId, messages, journalId);
 
 ### Error Handling
 
-- **User-Friendly**: Clear, actionable error messages
-- **Retry Logic**: Automatic retry for recoverable errors
-- **Graceful Degradation**: App continues working even with errors
+- **User-Friendly**: Clear, actionable error messages with context
+- **Retry Logic**: Automatic retry for recoverable errors (network, timeout)
+- **Graceful Degradation**: App continues working even with partial failures
+- **Error Parsing**: Intelligent error message parsing and display
 
 ## 🛠️ Development
 

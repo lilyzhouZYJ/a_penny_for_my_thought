@@ -1,6 +1,6 @@
 # Backend - A Penny For My Thought API
 
-FastAPI backend for the AI-powered journaling web application.
+FastAPI backend for the AI-powered journaling web application. Provides REST API endpoints for chat functionality, journal management, and RAG-powered context retrieval using OpenAI's GPT models and ChromaDB vector storage.
 
 ## 🚀 Quick Start
 
@@ -49,14 +49,12 @@ Create a `.env` file in the `backend/` directory:
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # Optional (defaults provided)
-OPENAI_MODEL=gpt-4o
+OPENAI_MODEL=gpt-4-turbo-preview
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-JOURNALS_DIRECTORY=./journals
 VECTOR_DB_DIRECTORY=./chroma_db
+DATABASE_PATH=./chat_history.db
 RAG_TOP_K=5
 RAG_SIMILARITY_THRESHOLD=0.7
-RAG_CHUNK_SIZE=500
-RAG_CHUNK_OVERLAP=50
 LLM_TEMPERATURE=0.7
 LLM_MAX_TOKENS=2000
 STREAMING_ENABLED=true
@@ -86,29 +84,29 @@ backend/
 │   │   ├── journal.py      # Journal-related models
 │   │   └── errors.py       # Custom exceptions
 │   ├── services/            # Business logic
-│   │   ├── chat_service.py # Chat orchestration
-│   │   ├── journal_service.py # Journal management
-│   │   ├── llm_service.py  # OpenAI integration
-│   │   └── rag_service.py  # RAG pipeline
+│   │   ├── chat_service.py # Chat orchestration and memory
+│   │   ├── journal_service.py # Journal persistence and CRUD
+│   │   ├── llm_service.py  # OpenAI integration with retry
+│   │   └── rag_service.py  # RAG pipeline for context retrieval
 │   ├── storage/             # Data persistence
-│   │   ├── file_storage.py # Markdown file storage
-│   │   └── vector_storage.py # ChromaDB vector storage
+│   │   ├── database.py     # SQLite database operations
+│   │   └── vector_storage.py # ChromaDB vector operations
 │   ├── api/                 # REST API endpoints
+│   │   ├── middleware/     # Error handling middleware
 │   │   └── v1/
-│   │       ├── chat.py     # Chat endpoints
-│   │       └── journals.py # Journal endpoints
+│   │       ├── chat.py     # Chat endpoints (streaming/non-streaming)
+│   │       └── journals.py # Journal management endpoints
 │   ├── utils/               # Utility functions
 │   │   ├── embeddings.py   # OpenAI embeddings
-│   │   ├── markdown_formatter.py # Markdown formatting
-│   │   └── token_counter.py # Token counting
+│   │   └── token_counter.py # Token counting with tiktoken
 │   └── chains/              # Prompt templates
 │       └── prompts.py      # System prompts
 ├── tests/                   # Unit tests
-├── journals/               # Markdown conversation files
-├── chroma_db/             # Vector database storage
-├── requirements.txt       # Python dependencies
-├── env_template.txt      # Environment template
-└── README.md             # This file
+├── chat_history.db         # SQLite database
+├── chroma_db/              # ChromaDB vector storage
+├── requirements.txt        # Python dependencies
+├── env_template.txt       # Environment template
+└── README.md              # This file
 ```
 
 ## 🧪 Testing
@@ -132,11 +130,10 @@ pytest -v
 ### Test Structure
 
 - `test_models.py` - Data model validation tests
-- `test_file_storage.py` - File storage tests
-- `test_vector_storage.py` - Vector database tests
-- `test_chat_service.py` - Chat service logic tests
-- `test_journal_service.py` - Journal management tests
-- `test_rag_service.py` - RAG pipeline tests
+- `test_vector_storage.py` - ChromaDB vector storage tests
+- `test_chat_service.py` - Chat service orchestration tests
+- `test_token_counter.py` - Token counting and management tests
+- `test_rag_chunking.py` - RAG text chunking tests
 
 ## 🔌 API Endpoints
 
@@ -193,8 +190,8 @@ User Message → ChatService → RAGService → LLMService → Response
 
 ### Automatic Saving
 - Conversations are auto-saved after each message exchange
-- Markdown files stored in `journals/` directory
-- Vector embeddings stored in `chroma_db/` for RAG
+- SQLite database stores conversation metadata and messages
+- Vector embeddings stored in `chroma_db/` for RAG context retrieval
 
 ### RAG (Retrieval-Augmented Generation)
 - Semantic search across past conversations
@@ -273,8 +270,8 @@ API_PORT=8000
 CORS_ORIGINS=["https://yourdomain.com"]
 
 # Ensure secure storage paths
-JOURNALS_DIRECTORY=/app/data/journals
-VECTOR_DB_DIRECTORY=/app/data/vector_db
+DATABASE_PATH=/app/data/chat_history.db
+VECTOR_DB_DIRECTORY=/app/data/chroma_db
 ```
 
 ## 📊 Performance

@@ -2,7 +2,7 @@
 OPENAI_API_KEY=sk-your-api-key-here
 
 # Optional: Model Configuration
-OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MODEL=gpt-4o
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
 # Optional: Storage Paths
@@ -12,10 +12,13 @@ DATABASE_PATH=./chat_history.db
 # Optional: RAG Configuration
 RAG_TOP_K=5
 RAG_SIMILARITY_THRESHOLD=0.7
+RAG_CHUNK_SIZE=500
+RAG_CHUNK_OVERLAP=50
 
 # Optional: API Configuration
 API_HOST=0.0.0.0
 API_PORT=8000
+API_RELOAD=true
 
 # Optional: LLM Configuration
 LLM_TEMPERATURE=0.7
@@ -27,5 +30,3 @@ CORS_ORIGINS=["http://localhost:3000"]
 
 # Optional: Logging
 LOG_LEVEL=INFO
-
-
