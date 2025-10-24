@@ -8,6 +8,8 @@ from app.models import (
     Journal,
     JournalMetadata,
     JournalNotFoundError,
+    UpdateWriteContentRequest,
+    AskAIRequest,
 )
 from app.services.journal_service import JournalService
 
@@ -179,5 +181,75 @@ async def delete_journal(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete journal: {str(e)}"
+        )
+
+
+@router.put("/write-content", response_model=JournalMetadata)
+async def update_write_content(
+    request: UpdateWriteContentRequest,
+    journal_service: JournalService = Depends(get_journal_service)
+) -> JournalMetadata:
+    """
+    Update write mode content.
+    
+    Args:
+        request: Write content update request
+        journal_service: Injected JournalService
+    
+    Returns:
+        JournalMetadata with updated journal information
+    """
+    try:
+        result = await journal_service.update_write_content(
+            session_id=request.session_id,
+            content=request.content,
+            journal_id=request.journal_id,
+            title=request.title
+        )
+        
+        logger.info(f"Updated write content for journal: {result.filename}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to update write content: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update write content: {str(e)}"
+        )
+
+
+@router.post("/ask-ai", response_model=dict)
+async def ask_ai_for_input(
+    request: AskAIRequest,
+    journal_service: JournalService = Depends(get_journal_service)
+):
+    """
+    Ask AI for input on write mode content.
+    
+    Args:
+        request: AI input request
+        journal_service: Injected JournalService
+    
+    Returns:
+        AI response message
+    """
+    try:
+        response = await journal_service.ask_ai_for_input(
+            session_id=request.session_id,
+            content=request.content,
+            conversation_history=request.conversation_history,
+            journal_id=request.journal_id
+        )
+        
+        logger.info(f"AI provided input for write content")
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Failed to get AI input: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get AI input: {str(e)}"
         )
 

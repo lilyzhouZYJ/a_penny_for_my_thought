@@ -9,15 +9,17 @@ import { useRouter } from 'next/navigation';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { useChat } from '@/lib/context/ChatContext';
+import { useWrite } from '@/lib/context/WriteContext';
+import { handleSessionSelection } from '@/lib/utils/session-navigation';
 
 export default function HomePage() {
   const router = useRouter();
   const { sessionId, handleNewConversation, conversationRefreshTrigger } = useChat();
+  const { handleNewWrite } = useWrite();
 
   const handleSelectConversation = useCallback(
-    (selectedSessionId: string) => {
-      // Navigate to the chat URL
-      router.push(`/chat/${selectedSessionId}`);
+    async (selectedSessionId: string) => {
+      await handleSessionSelection(selectedSessionId, router);
     },
     [router]
   );
@@ -28,6 +30,7 @@ export default function HomePage() {
       <ChatSidebar
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        onNewWrite={handleNewWrite}
         currentSessionId={sessionId}
         className="w-80 shrink-0"
         conversationRefreshTrigger={conversationRefreshTrigger}

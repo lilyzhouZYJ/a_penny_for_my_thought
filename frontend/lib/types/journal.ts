@@ -13,6 +13,7 @@ export interface JournalMetadata {
   date: string;  // ISO string from backend
   message_count: number;
   duration_seconds: number | null;
+  mode: "chat" | "write";
 }
 
 export interface Journal extends JournalMetadata {
@@ -25,6 +26,21 @@ export interface CreateJournalRequest {
   journal_id: string | null;
   messages: Message[];
   title: string | null;
+  mode: "chat" | "write";
+}
+
+export interface UpdateWriteContentRequest {
+  session_id: string;
+  journal_id: string | null;
+  content: string;
+  title: string | null;
+}
+
+export interface AskAIRequest {
+  session_id: string;
+  journal_id: string | null;
+  content: string;
+  conversation_history: Message[];
 }
 
 export interface JournalListResponse {

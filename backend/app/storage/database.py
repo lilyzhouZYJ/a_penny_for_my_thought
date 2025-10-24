@@ -44,6 +44,7 @@ class DatabaseStorage:
                     updated_at TIMESTAMP NOT NULL,
                     message_count INTEGER NOT NULL DEFAULT 0,
                     duration_seconds INTEGER,
+                    mode TEXT NOT NULL DEFAULT 'chat' CHECK (mode IN ('chat', 'write')),
                     metadata TEXT  -- JSON string for additional data
                 )
             """)
@@ -66,6 +67,14 @@ class DatabaseStorage:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_journals_created_at ON journals (created_at)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_journal_id ON messages (journal_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages (timestamp)")
+            
+            # Migration: Add mode column if it doesn't exist
+            try:
+                cursor.execute("ALTER TABLE journals ADD COLUMN mode TEXT DEFAULT 'chat'")
+                logger.info("Added mode column to journals table")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
             
             conn.commit()
             logger.info("Database schema initialized")
@@ -91,7 +100,8 @@ class DatabaseStorage:
         session_id: str,
         messages: List[Message],
         title: str,
-        journal_id: Optional[str] = None
+        journal_id: Optional[str] = None,
+        mode: str = "chat"
     ) -> JournalMetadata:
         """
         Save or update a journal.
@@ -101,6 +111,7 @@ class DatabaseStorage:
             messages: List of messages in journal
             title: Journal title
             journal_id: Optional existing journal ID (for updates)
+            mode: Journal mode ("chat" or "write")
         
         Returns:
             JournalMetadata with journal information
@@ -127,9 +138,9 @@ class DatabaseStorage:
                 final_journal_id = existing_journal['id']
                 cursor.execute("""
                     UPDATE journals 
-                    SET title = ?, updated_at = ?, message_count = ?, duration_seconds = ?
+                    SET title = ?, updated_at = ?, message_count = ?, duration_seconds = ?, mode = ?
                     WHERE id = ?
-                """, (title, updated_at, len(messages), duration_seconds, final_journal_id))
+                """, (title, updated_at, len(messages), duration_seconds, mode, final_journal_id))
                 
                 # Delete existing messages
                 cursor.execute("DELETE FROM messages WHERE journal_id = ?", (final_journal_id,))
@@ -138,9 +149,9 @@ class DatabaseStorage:
                 final_journal_id = session_id  # Use session_id as journal_id
                 cursor.execute("""
                     INSERT INTO journals 
-                    (id, session_id, title, created_at, updated_at, message_count, duration_seconds)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (final_journal_id, session_id, title, created_at, updated_at, len(messages), duration_seconds))
+                    (id, session_id, title, created_at, updated_at, message_count, duration_seconds, mode)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (final_journal_id, session_id, title, created_at, updated_at, len(messages), duration_seconds, mode))
             
             # Insert messages
             for message in messages:
@@ -164,7 +175,8 @@ class DatabaseStorage:
                 title=title,
                 date=created_at,
                 message_count=len(messages),
-                duration_seconds=duration_seconds
+                duration_seconds=duration_seconds,
+                mode=mode
             )
             
             action = "Updated" if existing_journal else "Saved"
@@ -188,7 +200,7 @@ class DatabaseStorage:
             # Get journal metadata
             cursor.execute("""
                 SELECT id, session_id, title, created_at, updated_at, 
-                       message_count, duration_seconds, metadata
+                       message_count, duration_seconds, mode, metadata
                 FROM journals 
                 WHERE id = ?
             """, (journal_id,))
@@ -231,6 +243,7 @@ class DatabaseStorage:
                 date=datetime.fromisoformat(journal_row['created_at']),
                 message_count=journal_row['message_count'],
                 duration_seconds=journal_row['duration_seconds'],
+                mode=journal_row['mode'] or 'chat',  # Default to 'chat' for existing records
                 messages=messages,
                 raw_content=""  # Not used for database storage
             )
@@ -268,7 +281,7 @@ class DatabaseStorage:
             # Get paginated results
             cursor.execute(f"""
                 SELECT id, session_id, title, created_at, updated_at, 
-                       message_count, duration_seconds, metadata
+                       message_count, duration_seconds, mode, metadata
                 FROM journals 
                 ORDER BY {sort_by} DESC
                 LIMIT ? OFFSET ?
@@ -285,7 +298,8 @@ class DatabaseStorage:
                     title=row['title'],
                     date=datetime.fromisoformat(row['created_at']),
                     message_count=row['message_count'],
-                    duration_seconds=row['duration_seconds']
+                    duration_seconds=row['duration_seconds'],
+                    mode=row['mode'] or 'chat'  # Default to 'chat' for existing records
                 ))
             
             return journals, total
@@ -314,7 +328,7 @@ class DatabaseStorage:
                 # Journal already exists, return its metadata
                 cursor.execute("""
                     SELECT id, session_id, title, created_at, updated_at, 
-                           message_count, duration_seconds, metadata
+                           message_count, duration_seconds, mode, metadata
                     FROM journals WHERE session_id = ?
                 """, (session_id,))
                 row = cursor.fetchone()
@@ -325,7 +339,8 @@ class DatabaseStorage:
                     title=row['title'],
                     date=datetime.fromisoformat(row['created_at']),
                     message_count=row['message_count'],
-                    duration_seconds=row['duration_seconds']
+                    duration_seconds=row['duration_seconds'],
+                    mode=row['mode'] or 'chat'  # Default to 'chat' for existing records
                 )
             
             # Create new placeholder journal
@@ -395,105 +410,3 @@ class DatabaseStorage:
             # Get full journal
             return self.get_journal(row['id'])
     
-    def search_journals(self, query: str, limit: int = 20) -> List[JournalMetadata]:
-        """
-        Search journals by title or message content.
-        
-        Args:
-            query: Search query
-            limit: Maximum number of results
-        
-        Returns:
-            List of matching journal metadata
-        """
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Search in titles and message content
-            search_term = f"%{query}%"
-            cursor.execute("""
-                SELECT DISTINCT j.id, j.session_id, j.title, j.created_at, j.updated_at, 
-                       j.message_count, j.duration_seconds, j.metadata
-                FROM journals j
-                LEFT JOIN messages m ON j.id = m.journal_id
-                WHERE j.title LIKE ? OR m.content LIKE ?
-                ORDER BY j.created_at DESC
-                LIMIT ?
-            """, (search_term, search_term, limit))
-            
-            rows = cursor.fetchall()
-            
-            # Convert to JournalMetadata objects
-            journals = []
-            for row in rows:
-                journals.append(JournalMetadata(
-                    id=row['id'],
-                    filename=row['id'],  # For compatibility
-                    title=row['title'],
-                    date=datetime.fromisoformat(row['created_at']),
-                    message_count=row['message_count'],
-                    duration_seconds=row['duration_seconds']
-                ))
-            
-            return journals
-    
-        """
-        Create a placeholder journal entry with no messages.
-        
-        This is used when starting a new conversation so it appears
-        in the conversation list immediately.
-        
-        Args:
-            session_id: Session UUID
-            title: Journal title (defaults to "New Conversation")
-        
-        Returns:
-            JournalMetadata for the created journal
-        """
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Check if journal already exists
-            cursor.execute("SELECT id FROM journals WHERE session_id = ?", (session_id,))
-            existing_journal = cursor.fetchone()
-            
-            if existing_journal:
-                # Journal already exists, return its metadata
-                cursor.execute("""
-                    SELECT id, session_id, title, created_at, updated_at, 
-                           message_count, duration_seconds, metadata
-                    FROM journals WHERE session_id = ?
-                """, (session_id,))
-                row = cursor.fetchone()
-                
-                return JournalMetadata(
-                    id=row['id'],
-                    filename=row['id'],
-                    title=row['title'],
-                    date=datetime.fromisoformat(row['created_at']),
-                    message_count=row['message_count'],
-                    duration_seconds=row['duration_seconds']
-                )
-            
-            # Create new placeholder journal
-            now = datetime.now(timezone.utc)
-            journal_id = session_id  # Use session_id as journal_id
-            
-            cursor.execute("""
-                INSERT INTO journals 
-                (id, session_id, title, created_at, updated_at, message_count, duration_seconds)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (journal_id, session_id, title, now, now, 0, None))
-            
-            conn.commit()
-            
-            logger.info(f"Created placeholder journal: {session_id}")
-            
-            return JournalMetadata(
-                id=journal_id,
-                filename=journal_id,
-                title=title,
-                date=now,
-                message_count=0,
-                duration_seconds=None
-            )

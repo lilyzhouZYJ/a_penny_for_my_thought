@@ -7,6 +7,8 @@ import {
   JournalMetadata,
   JournalListResponse,
   CreateJournalRequest,
+  UpdateWriteContentRequest,
+  AskAIRequest,
 } from '@/lib/types/journal';
 
 import { Message } from '@/lib/types/chat';
@@ -94,13 +96,15 @@ export async function saveJournal(
   sessionId: string,
   messages: Message[],
   journalId?: string | null,
-  title?: string | null
+  title?: string | null,
+  mode: "chat" | "write" = "chat"
 ): Promise<JournalMetadata> {
   const request: CreateJournalRequest = {
     session_id: sessionId,
     journal_id: journalId || null,
     messages,
     title: title || null,
+    mode,
   };
 
   const response = await fetch(`${API_URL}/api/v1/journals`, {
@@ -146,5 +150,85 @@ export async function deleteJournal(journalId: string): Promise<void> {
     }));
     throw new Error(error.detail || `HTTP ${response.status}`);
   }
+}
+
+/**
+ * Update write mode content.
+ * 
+ * @param sessionId - Session UUID
+ * @param writeContent - The main journal content
+ * @param journalId - Optional existing journal ID (for updates)
+ * @param title - Optional custom title
+ * @returns JournalMetadata for updated journal
+ */
+export async function updateWriteContent(
+  sessionId: string,
+  content: string,
+  journalId?: string | null,
+  title?: string | null
+): Promise<JournalMetadata> {
+  const request: UpdateWriteContentRequest = {
+    session_id: sessionId,
+    journal_id: journalId || null,
+    content: content,
+    title: title || null,
+  };
+
+  const response = await fetch(`${API_URL}/api/v1/journals/write-content`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      detail: 'Failed to update write content',
+    }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Ask AI for input on write mode content.
+ * 
+ * @param sessionId - Session UUID
+ * @param writeContent - The main journal content
+ * @param conversationHistory - Previous AI interactions
+ * @param journalId - Optional journal ID
+ * @returns AI response message and updated conversation history
+ */
+export async function askAIForInput(
+  sessionId: string,
+  content: string,
+  conversationHistory: Message[],
+  journalId?: string | null
+): Promise<{ message: Message; conversation_history: Message[] }> {
+  const request: AskAIRequest = {
+    session_id: sessionId,
+    journal_id: journalId || null,
+    content: content,
+    conversation_history: conversationHistory,
+  };
+
+  const response = await fetch(`${API_URL}/api/v1/journals/ask-ai`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      detail: 'Failed to get AI input',
+    }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return await response.json();
 }
 

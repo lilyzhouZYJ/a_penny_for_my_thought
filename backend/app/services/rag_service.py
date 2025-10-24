@@ -167,4 +167,120 @@ class RAGService:
                 i += 1
         
         return chunks
+    
+    async def index_write_content(
+        self,
+        content: str,
+        session_id: str,
+        metadata: Dict
+    ) -> None:
+        """
+        Index write mode content in vector store for future semantic search.
+        
+        Args:
+            content: Write mode journal content
+            session_id: Session UUID
+            metadata: Additional metadata (date, title, mode, etc.)
+        """
+        try:
+            if not content.strip():
+                logger.warning("No content to index for write mode")
+                return
+            
+            # Chunk the content into smaller pieces for better retrieval
+            chunks = self._chunk_write_content(content)
+            
+            if not chunks:
+                logger.warning("No chunks created from write content")
+                return
+            
+            # Prepare data for vector store
+            documents = []
+            metadatas = []
+            ids = []
+            
+            for i, chunk in enumerate(chunks):
+                documents.append(chunk)
+                
+                # Combine metadata
+                chunk_metadata = {
+                    **metadata,
+                    'session_id': session_id,
+                    'chunk_index': i,
+                    'content_type': 'write_mode'
+                }
+                metadatas.append(chunk_metadata)
+                
+                # Generate unique ID for this chunk
+                chunk_id = f"{session_id}_write_chunk_{i}_{uuid4().hex[:8]}"
+                ids.append(chunk_id)
+            
+            # Add to vector store
+            await self.vector_storage.add_documents(
+                documents=documents,
+                metadatas=metadatas,
+                ids=ids
+            )
+            
+            logger.info(f"Indexed {len(chunks)} chunks from write content session {session_id}")
+            
+        except Exception as e:
+            logger.error(f"Failed to index write content: {e}")
+            # Don't raise - indexing failure shouldn't prevent saving
+    
+    def _chunk_write_content(self, content: str, max_chunk_size: int = 1000) -> List[str]:
+        """
+        Chunk write mode content into semantic units.
+        
+        Strategy: Split content by paragraphs and sentences to create meaningful chunks.
+        
+        Args:
+            content: Write mode journal content
+            max_chunk_size: Maximum characters per chunk
+        
+        Returns:
+            List of content chunks
+        """
+        if not content.strip():
+            return []
+        
+        chunks = []
+        
+        # Split by double newlines (paragraphs) first
+        paragraphs = content.split('\n\n')
+        
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+            
+            # If paragraph is small enough, use it as-is
+            if len(paragraph) <= max_chunk_size:
+                chunks.append(paragraph)
+            else:
+                # Split large paragraphs by sentences
+                sentences = paragraph.split('. ')
+                current_chunk = ""
+                
+                for sentence in sentences:
+                    sentence = sentence.strip()
+                    if not sentence:
+                        continue
+                    
+                    # Add period back if it was removed by split
+                    if not sentence.endswith('.') and not sentence.endswith('!') and not sentence.endswith('?'):
+                        sentence += '.'
+                    
+                    # If adding this sentence would exceed max size, save current chunk
+                    if len(current_chunk) + len(sentence) + 1 > max_chunk_size and current_chunk:
+                        chunks.append(current_chunk.strip())
+                        current_chunk = sentence
+                    else:
+                        current_chunk += " " + sentence if current_chunk else sentence
+                
+                # Add the last chunk
+                if current_chunk.strip():
+                    chunks.append(current_chunk.strip())
+        
+        return chunks
 

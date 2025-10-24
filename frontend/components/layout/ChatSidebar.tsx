@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import { ConversationList } from '@/components/conversations/ConversationList';
-import { NewConversationButton } from '@/components/conversations/NewConversationButton';
+import { NewButton } from '@/components/conversations/NewButton';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 interface ChatSidebarProps {
   onSelectConversation: (sessionId: string) => void;
   onNewConversation: () => void;
+  onNewWrite?: () => void;
   currentSessionId?: string;
   className?: string;
   conversationRefreshTrigger?: number;
@@ -25,6 +26,7 @@ interface ChatSidebarProps {
 const SidebarContent = React.memo(function SidebarContent({
   onSelectConversation,
   onNewConversation,
+  onNewWrite,
   currentSessionId,
   conversationRefreshTrigger,
   onItemClick,
@@ -48,8 +50,9 @@ const SidebarContent = React.memo(function SidebarContent({
           <p className="text-sm text-claude-text-muted">AI-powered journaling</p>
         </div>
         
-        <NewConversationButton
-          onClick={handleNewChat}
+        <NewButton
+          onNewChat={handleNewChat}
+          onNewWrite={onNewWrite || (() => {})}
           className="w-full min-h-[48px] claude-button" // Touch-friendly
         />
       </div>
@@ -71,6 +74,7 @@ const SidebarContent = React.memo(function SidebarContent({
 export function ChatSidebar({
   onSelectConversation,
   onNewConversation,
+  onNewWrite,
   currentSessionId,
   className,
   conversationRefreshTrigger,
@@ -96,6 +100,7 @@ export function ChatSidebar({
             <SidebarContent
               onSelectConversation={onSelectConversation}
               onNewConversation={onNewConversation}
+              onNewWrite={onNewWrite}
               currentSessionId={currentSessionId}
               conversationRefreshTrigger={conversationRefreshTrigger}
               onItemClick={() => setMobileOpen(false)}
@@ -114,6 +119,7 @@ export function ChatSidebar({
         <SidebarContent
           onSelectConversation={onSelectConversation}
           onNewConversation={onNewConversation}
+          onNewWrite={onNewWrite}
           currentSessionId={currentSessionId}
           conversationRefreshTrigger={conversationRefreshTrigger}
         />

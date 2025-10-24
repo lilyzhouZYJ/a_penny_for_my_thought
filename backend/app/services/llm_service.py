@@ -184,4 +184,131 @@ Title ({max_length} characters max, no quotes):"""
             logger.error(f"Title generation failed: {e}")
             # Return default instead of raising - title generation is not critical
             return "Untitled Conversation"
+    
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10)
+    )
+    async def generate_title_from_content(
+        self,
+        content: str,
+        max_length: int = 50
+    ) -> str:
+        """
+        Generate concise title for write mode content using GPT-3.5-turbo.
+        
+        Args:
+            content: Write mode content
+            max_length: Maximum title length
+        
+        Returns:
+            Generated title (concise, descriptive)
+        
+        Raises:
+            LLMError: If API call fails
+        """
+        try:
+            client = self.get_async_client(self.api_key)
+            
+            prompt = f"""Based on the following journal content, generate a concise, descriptive title (maximum {max_length} characters). The title should capture the main theme or topic.
+
+Journal Content:
+{content[:1000]}
+
+Title ({max_length} characters max, no quotes):"""
+            
+            response = await client.chat.completions.create(
+                model=self.title_model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,  # Lower temperature for consistent titles
+                max_tokens=20
+            )
+            
+            title = response.choices[0].message.content or "Untitled"
+            
+            # Strip quotes if present
+            title = title.strip('"\'')
+            
+            # Truncate to max length
+            if len(title) > max_length:
+                title = title[:max_length].rsplit(' ', 1)[0]  # Trim to last complete word
+            
+            logger.info(f"Generated title from content: {title}")
+            
+            return title
+            
+        except Exception as e:
+            logger.error(f"Title generation from content failed: {e}")
+            # Return default instead of raising - title generation is not critical
+            return "Untitled Journal"
+    
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10)
+    )
+    async def generate_therapeutic_response(
+        self,
+        journal_content: str,
+        conversation_history: List[Dict]
+    ) -> str:
+        """
+        Generate therapeutic response to journal content.
+        
+        Args:
+            journal_content: The main journal content
+            conversation_history: Previous AI interactions
+        
+        Returns:
+            Therapeutic response message
+        
+        Raises:
+            LLMError: If API call fails
+        """
+        try:
+            client = self.get_async_client(self.api_key)
+            
+            # Build conversation context
+            context = ""
+            if conversation_history:
+                context = "\nPrevious conversation:\n"
+                for msg in conversation_history[-4:]:  # Last 4 messages for context
+                    role = "User" if msg.get("role") == "user" else "Assistant"
+                    context += f"{role}: {msg.get('content', '')}\n"
+            
+            prompt = f"""You are a compassionate, professional therapist providing thoughtful responses to journal entries. Your role is to:
+
+1. Acknowledge the person's feelings and experiences with empathy
+2. Offer gentle insights and observations
+3. Ask thoughtful questions to encourage deeper reflection
+4. Provide supportive guidance without being prescriptive
+5. Maintain a warm, non-judgmental tone
+
+Journal Entry:
+{journal_content[:2000]}
+
+{context}
+
+Please provide a thoughtful, therapeutic response that acknowledges their feelings and offers gentle guidance. Keep it conversational and supportive, as if you're responding in a chat bubble. Do not include any formatting or quotes."""
+            
+            response = await client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "You are a compassionate therapist providing supportive responses to journal entries."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            response_text = response.choices[0].message.content or "I appreciate you sharing your thoughts with me. How are you feeling about what you've written?"
+            
+            logger.info("Generated therapeutic response")
+            
+            return response_text
+            
+        except Exception as e:
+            logger.error(f"Therapeutic response generation failed: {e}")
+            raise LLMError(str(e))
 
