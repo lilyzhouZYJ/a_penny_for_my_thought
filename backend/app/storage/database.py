@@ -410,3 +410,37 @@ class DatabaseStorage:
             # Get full journal
             return self.get_journal(row['id'])
     
+    def update_journal_title(self, journal_id: str, title: str) -> JournalMetadata:
+        """
+        Update journal title.
+        
+        Args:
+            journal_id: Journal ID
+            title: New title
+        
+        Returns:
+            Updated JournalMetadata
+        
+        Raises:
+            JournalNotFoundError: If journal doesn't exist
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Check if journal exists
+            cursor.execute("SELECT id FROM journals WHERE id = ?", (journal_id,))
+            if not cursor.fetchone():
+                raise JournalNotFoundError(f"Journal {journal_id} not found")
+            
+            # Update title
+            cursor.execute("""
+                UPDATE journals 
+                SET title = ?, updated_at = ?
+                WHERE id = ?
+            """, (title, datetime.now(timezone.utc), journal_id))
+            
+            conn.commit()
+            
+            # Return updated metadata
+            return self.get_journal(journal_id)
+    

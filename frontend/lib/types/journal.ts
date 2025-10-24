@@ -43,6 +43,11 @@ export interface AskAIRequest {
   conversation_history: Message[];
 }
 
+export interface UpdateJournalTitleRequest {
+  journal_id: string;
+  title: string;
+}
+
 export interface JournalListResponse {
   journals: JournalMetadata[];
   total: number;

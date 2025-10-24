@@ -330,3 +330,28 @@ class JournalService:
             # Return default title
             return "Untitled Journal"
     
+    async def update_journal_title(self, journal_id: str, title: str) -> JournalMetadata:
+        """
+        Update journal title.
+        
+        Args:
+            journal_id: Journal ID
+            title: New title
+        
+        Returns:
+            Updated JournalMetadata
+        """
+        try:
+            # Update title in database
+            journal_metadata = self.database_storage.update_journal_title(
+                journal_id=journal_id,
+                title=title
+            )
+            
+            logger.info(f"Updated journal title: {journal_id} -> {title}")
+            return journal_metadata
+            
+        except Exception as e:
+            logger.error(f"Failed to update journal title: {e}")
+            raise
+    

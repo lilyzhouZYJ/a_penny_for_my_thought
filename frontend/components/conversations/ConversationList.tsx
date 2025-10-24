@@ -9,8 +9,10 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
+import { EditableTitle } from '@/components/conversations/EditableTitle';
 import { JournalMetadata } from '@/lib/types/journal';
 import { listJournals, deleteJournal } from '@/lib/api/chat';
+import { updateJournalTitle } from '@/lib/api/journals';
 import { cn } from '@/lib/utils';
 import { FileText, Trash2 } from 'lucide-react';
 import { parseApiError } from '@/lib/utils/error-handlers';
@@ -67,6 +69,24 @@ export const ConversationList = React.memo(function ConversationList({
     }
   }, [loadConversations]);
 
+  const handleUpdateTitle = useCallback(async (conversationId: string, newTitle: string) => {
+    try {
+      await updateJournalTitle(conversationId, newTitle);
+      
+      // Update the local state to reflect the change immediately
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, title: newTitle }
+            : conv
+        )
+      );
+    } catch (err) {
+      console.error('Failed to update conversation title:', err);
+      throw err; // Re-throw to let EditableTitle handle the error
+    }
+  }, []);
+
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
@@ -122,9 +142,11 @@ export const ConversationList = React.memo(function ConversationList({
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 space-y-1">
-                <h3 className="font-medium text-sm line-clamp-1 text-claude-text">
-                  {conversation.title || 'Untitled Conversation'}
-                </h3>
+                <EditableTitle
+                  title={conversation.title || 'Untitled Conversation'}
+                  onUpdate={(newTitle) => handleUpdateTitle(conversation.id, newTitle)}
+                  className="mb-1"
+                />
                 <p className="text-xs text-claude-text-muted">
                   {new Date(conversation.date).toLocaleDateString()}
                 </p>

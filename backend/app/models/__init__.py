@@ -19,6 +19,7 @@ from .journal import (
     JournalMetadata,
     UpdateWriteContentRequest,
     AskAIRequest,
+    UpdateJournalTitleRequest,
 )
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "CreateJournalRequest",
     "UpdateWriteContentRequest",
     "AskAIRequest",
+    "UpdateJournalTitleRequest",
     # Error classes
     "LLMError",
     "StorageError",

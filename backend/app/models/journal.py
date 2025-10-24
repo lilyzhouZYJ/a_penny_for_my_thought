@@ -52,3 +52,10 @@ class AskAIRequest(BaseModel):
     content: str  # The write mode content
     conversation_history: List[Message] = []
 
+class UpdateJournalTitleRequest(BaseModel):
+    """
+    Request to update journal title.
+    """
+    journal_id: str
+    title: str
+

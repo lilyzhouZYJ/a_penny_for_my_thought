@@ -10,6 +10,7 @@ from app.models import (
     JournalNotFoundError,
     UpdateWriteContentRequest,
     AskAIRequest,
+    UpdateJournalTitleRequest,
 )
 from app.services.journal_service import JournalService
 
@@ -251,5 +252,37 @@ async def ask_ai_for_input(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get AI input: {str(e)}"
+        )
+
+@router.put("/title", response_model=JournalMetadata)
+async def update_journal_title(
+    request: UpdateJournalTitleRequest,
+    journal_service: JournalService = Depends(get_journal_service)
+) -> JournalMetadata:
+    """
+    Update journal title.
+    """
+    try:
+        journal_metadata = await journal_service.update_journal_title(
+            journal_id=request.journal_id,
+            title=request.title
+        )
+        
+        logger.info(f"Updated journal title: {request.journal_id}")
+        
+        return journal_metadata
+        
+    except JournalNotFoundError as e:
+        logger.warning(f"Journal not found: {e}")
+        raise HTTPException(
+            status_code=404,
+            detail=str(e)
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to update journal title: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update journal title: {str(e)}"
         )
 

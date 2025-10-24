@@ -9,6 +9,7 @@ import {
   CreateJournalRequest,
   UpdateWriteContentRequest,
   AskAIRequest,
+  UpdateJournalTitleRequest,
 } from '@/lib/types/journal';
 
 import { Message } from '@/lib/types/chat';
@@ -225,6 +226,33 @@ export async function askAIForInput(
   if (!response.ok) {
     const error = await response.json().catch(() => ({
       detail: 'Failed to get AI input',
+    }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+export async function updateJournalTitle(
+  journalId: string,
+  title: string
+): Promise<JournalMetadata> {
+  const request: UpdateJournalTitleRequest = {
+    journal_id: journalId,
+    title: title,
+  };
+
+  const response = await fetch(`${API_URL}/api/v1/journals/title`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      detail: 'Failed to update journal title',
     }));
     throw new Error(error.detail || `HTTP ${response.status}`);
   }
