@@ -5,7 +5,7 @@
  * Responsive: Fixed sidebar on desktop, drawer on mobile.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConversationList } from '@/components/conversations/ConversationList';
 import { NewButton } from '@/components/conversations/NewButton';
@@ -24,6 +24,11 @@ interface ChatSidebarProps {
   conversationRefreshTrigger?: number;
 }
 
+interface SidebarContentProps extends ChatSidebarProps {
+  onItemClick?: () => void;
+  sidebarWidth: number;
+}
+
 const SidebarContent = React.memo(function SidebarContent({
   onSelectConversation,
   onNewConversation,
@@ -31,7 +36,8 @@ const SidebarContent = React.memo(function SidebarContent({
   currentSessionId,
   conversationRefreshTrigger,
   onItemClick,
-}: ChatSidebarProps & { onItemClick?: () => void }) {
+  sidebarWidth,
+}: SidebarContentProps) {
   const router = useRouter();
   
   const handleSelect = (sessionId: string) => {
@@ -56,10 +62,12 @@ const SidebarContent = React.memo(function SidebarContent({
           <h1 
             className="text-xl font-bold text-claude-text cursor-pointer hover:text-claude-accent transition-colors"
             onClick={handleTitleClick}
+            title="A Penny For My Thought - Click to go home"
           >
-            A Penny For My Thought
+            {sidebarWidth > 400 ? 'A Penny For My Thought' : 
+             sidebarWidth > 320 ? 'A Penny For My Thought' : 
+             'A Penny For My Thought'}
           </h1>
-          <p className="text-sm text-claude-text-muted">AI-powered journaling</p>
         </div>
         
         <NewButton
@@ -92,6 +100,52 @@ export function ChatSidebar({
   conversationRefreshTrigger,
 }: ChatSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(320); // Default width in pixels
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Resize functionality
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    
+    const newWidth = e.clientX;
+    const minWidth = 240; // Minimum width
+    const maxWidth = 600; // Maximum width
+    
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      setSidebarWidth(newWidth);
+    }
+  }, [isResizing]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
     <>
@@ -116,6 +170,7 @@ export function ChatSidebar({
               currentSessionId={currentSessionId}
               conversationRefreshTrigger={conversationRefreshTrigger}
               onItemClick={() => setMobileOpen(false)}
+              sidebarWidth={320} // Mobile drawer uses fixed width
             />
           </SheetContent>
         </Sheet>
@@ -123,10 +178,12 @@ export function ChatSidebar({
 
       {/* Desktop: Fixed Sidebar */}
       <aside
+        ref={sidebarRef}
         className={cn(
-          'hidden md:flex flex-col h-full bg-claude-sidebar border-r border-claude-border',
+          'hidden md:flex flex-col h-full bg-claude-sidebar border-r border-claude-border relative',
           className
         )}
+        style={{ width: `${sidebarWidth}px` }}
       >
         <SidebarContent
           onSelectConversation={onSelectConversation}
@@ -134,6 +191,13 @@ export function ChatSidebar({
           onNewWrite={onNewWrite}
           currentSessionId={currentSessionId}
           conversationRefreshTrigger={conversationRefreshTrigger}
+          sidebarWidth={sidebarWidth}
+        />
+        
+        {/* Resize Handle */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-claude-accent/20 transition-colors"
+          onMouseDown={handleMouseDown}
         />
       </aside>
     </>

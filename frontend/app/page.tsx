@@ -37,7 +37,7 @@ export default function HomePage() {
         onNewConversation={handleNewConversation}
         onNewWrite={handleNewWrite}
         currentSessionId={sessionId}
-        className="w-80 shrink-0"
+        className="shrink-0"
         conversationRefreshTrigger={conversationRefreshTrigger}
       />
 

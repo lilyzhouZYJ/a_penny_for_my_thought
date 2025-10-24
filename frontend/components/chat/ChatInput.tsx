@@ -45,7 +45,7 @@ export const ChatInput = React.memo(function ChatInput({
   );
 
   return (
-    <div className={cn('flex gap-3 p-6 border-t border-claude-border bg-claude-bg', className)}>
+    <div className={cn('flex gap-3 p-6 bg-claude-bg', className)}>
       <div className="max-w-4xl mx-auto w-full flex gap-3">
         <Textarea
           value={input}
