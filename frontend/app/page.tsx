@@ -4,7 +4,7 @@
  * Home page - Main chat interface with sidebar.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChatSidebar } from '@/components/layout/ChatSidebar';
 import { ChatInterface } from '@/components/chat/ChatInterface';
@@ -14,8 +14,13 @@ import { handleSessionSelection } from '@/lib/utils/session-navigation';
 
 export default function HomePage() {
   const router = useRouter();
-  const { sessionId, handleNewConversation, conversationRefreshTrigger } = useChat();
+  const { sessionId, handleNewConversation, conversationRefreshTrigger, clearChat } = useChat();
   const { handleNewWrite } = useWrite();
+
+  // Clear chat state when home page loads
+  useEffect(() => {
+    clearChat();
+  }, [clearChat]);
 
   const handleSelectConversation = useCallback(
     async (selectedSessionId: string) => {

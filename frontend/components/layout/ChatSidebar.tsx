@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ConversationList } from '@/components/conversations/ConversationList';
 import { NewButton } from '@/components/conversations/NewButton';
 import { Separator } from '@/components/ui/separator';
@@ -31,6 +32,8 @@ const SidebarContent = React.memo(function SidebarContent({
   conversationRefreshTrigger,
   onItemClick,
 }: ChatSidebarProps & { onItemClick?: () => void }) {
+  const router = useRouter();
+  
   const handleSelect = (sessionId: string) => {
     onSelectConversation(sessionId);
     onItemClick?.(); // Close drawer on mobile
@@ -41,12 +44,21 @@ const SidebarContent = React.memo(function SidebarContent({
     onItemClick?.(); // Close drawer on mobile
   };
 
+  const handleTitleClick = () => {
+    router.push('/');
+  };
+
   return (
     <>
       {/* Header */}
       <div className="p-6 space-y-6">
         <div className="space-y-2">
-          <h1 className="text-xl font-bold text-claude-text">A Penny For My Thought</h1>
+          <h1 
+            className="text-xl font-bold text-claude-text cursor-pointer hover:text-claude-accent transition-colors"
+            onClick={handleTitleClick}
+          >
+            A Penny For My Thought
+          </h1>
           <p className="text-sm text-claude-text-muted">AI-powered journaling</p>
         </div>
         
