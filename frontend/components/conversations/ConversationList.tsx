@@ -5,7 +5,6 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
@@ -14,7 +13,7 @@ import { JournalMetadata } from '@/lib/types/journal';
 import { listJournals, deleteJournal } from '@/lib/api/chat';
 import { updateJournalTitle } from '@/lib/api/journals';
 import { cn } from '@/lib/utils';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText, Trash2, MessageSquare, PenTool } from 'lucide-react';
 import { parseApiError } from '@/lib/utils/error-handlers';
 import { Button } from '@/components/ui/button';
 
@@ -23,6 +22,7 @@ interface ConversationListProps {
   currentSessionId?: string;
   className?: string;
   refreshTrigger?: number; // External trigger to refresh conversations
+  sidebarWidth?: number; // Width of the sidebar for responsive adjustments
 }
 
 export const ConversationList = React.memo(function ConversationList({
@@ -30,10 +30,16 @@ export const ConversationList = React.memo(function ConversationList({
   currentSessionId,
   className,
   refreshTrigger,
+  sidebarWidth = 320,
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<JournalMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to get the appropriate icon for the mode
+  const getModeIcon = (mode: "chat" | "write") => {
+    return mode === "chat" ? MessageSquare : PenTool;
+  };
 
   const loadConversations = useCallback(async () => {
     try {
@@ -132,35 +138,47 @@ export const ConversationList = React.memo(function ConversationList({
     <ScrollArea className={cn('h-full', className)}>
       <div className="space-y-1 p-3">
         {conversations.map((conversation) => (
-          <Card
+          <div
             key={conversation.id}
             className={cn(
-              'p-3 hover:bg-claude-hover transition-colors group cursor-pointer border-claude-border',
-              currentSessionId === conversation.id && 'bg-claude-hover border-claude-accent'
+              'w-full p-3 hover:bg-claude-hover transition-colors group cursor-pointer rounded-md',
+              currentSessionId === conversation.id && 'bg-claude-hover'
             )}
             onClick={() => onSelect(conversation.id)}
+            style={{ 
+              minWidth: `${sidebarWidth - 24}px`, // Account for padding (12px * 2)
+              maxWidth: `${sidebarWidth - 24}px`
+            }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 space-y-1">
-                <EditableTitle
-                  title={conversation.title || 'Untitled Conversation'}
-                  onUpdate={(newTitle) => handleUpdateTitle(conversation.id, newTitle)}
-                  className="mb-1"
-                />
-                <p className="text-xs text-claude-text-muted">
-                  {new Date(conversation.date).toLocaleDateString()}
-                </p>
-                {conversation.message_count !== undefined && (
-                  <p className="text-xs text-claude-text-muted">
-                    {conversation.message_count} message{conversation.message_count !== 1 ? 's' : ''}
+            <div className="flex items-start justify-between w-full">
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                {/* Mode Icon - positioned to align with center of title */}
+                <div 
+                  className="flex-shrink-0 mt-2.5"
+                  title={conversation.mode === "chat" ? "Chat conversation" : "Write session"}
+                >
+                  {React.createElement(getModeIcon(conversation.mode), {
+                    className: "h-4 w-4 text-claude-text-muted"
+                  })}
+                </div>
+                
+                {/* Content */}
+                <div className="flex-1 space-y-1 min-w-0">
+                  <EditableTitle
+                    title={conversation.title || 'Untitled Conversation'}
+                    onUpdate={(newTitle) => handleUpdateTitle(conversation.id, newTitle)}
+                    className="mb-1"
+                  />
+                  <p className="text-xs text-claude-text-muted truncate">
+                    {new Date(conversation.date).toLocaleDateString()}
                   </p>
-                )}
+                </div>
               </div>
               
               <Button
                 variant="ghost"
                 size="sm"
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-destructive"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-destructive flex-shrink-0 ml-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteConversation(conversation.id, conversation.title);
@@ -170,7 +188,7 @@ export const ConversationList = React.memo(function ConversationList({
                 <Trash2 className="h-3 w-3" />
               </Button>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
     </ScrollArea>

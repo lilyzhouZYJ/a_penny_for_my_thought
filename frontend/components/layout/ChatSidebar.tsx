@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSidebarWidth } from '@/lib/hooks/useSidebarWidth';
 
 interface ChatSidebarProps {
   onSelectConversation: (sessionId: string) => void;
@@ -85,6 +86,7 @@ const SidebarContent = React.memo(function SidebarContent({
           onSelect={handleSelect}
           currentSessionId={currentSessionId}
           refreshTrigger={conversationRefreshTrigger}
+          sidebarWidth={sidebarWidth}
         />
       </div>
     </>
@@ -100,7 +102,7 @@ export function ChatSidebar({
   conversationRefreshTrigger,
 }: ChatSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(320); // Default width in pixels
+  const [sidebarWidth, setSidebarWidth] = useSidebarWidth(); // Persistent width
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -114,13 +116,8 @@ export function ChatSidebar({
     if (!isResizing) return;
     
     const newWidth = e.clientX;
-    const minWidth = 240; // Minimum width
-    const maxWidth = 600; // Maximum width
-    
-    if (newWidth >= minWidth && newWidth <= maxWidth) {
-      setSidebarWidth(newWidth);
-    }
-  }, [isResizing]);
+    setSidebarWidth(newWidth);
+  }, [isResizing, setSidebarWidth]);
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
