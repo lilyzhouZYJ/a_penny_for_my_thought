@@ -184,4 +184,51 @@ html {
   }
 }
 
+/* Dynamic scrollbar classes */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.scrollbar-visible {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent; /* Firefox */
+}
+
+.scrollbar-visible::-webkit-scrollbar {
+  width: 8px; /* Chrome, Safari, Opera */
+}
+
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: transparent; /* Chrome, Safari, Opera */
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2); /* Chrome, Safari, Opera */
+  border-radius: 4px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3); /* Chrome, Safari, Opera */
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+  .scrollbar-visible {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent; /* Firefox */
+  }
+  
+  .scrollbar-visible::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2); /* Chrome, Safari, Opera */
+  }
+  
+  .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3); /* Chrome, Safari, Opera */
+  }
+}
+
 

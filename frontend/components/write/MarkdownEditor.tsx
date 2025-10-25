@@ -29,6 +29,7 @@ export const MarkdownEditor = React.memo(function MarkdownEditor({
   className,
 }: MarkdownEditorProps) {
   const [showAskAIButton, setShowAskAIButton] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const askAIButtonRef = useRef<HTMLButtonElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -155,10 +156,44 @@ export const MarkdownEditor = React.memo(function MarkdownEditor({
     setShowAskAIButton(false);
   }, [content, onAskAI]);
 
+  // Handle scroll events (simplified - no timeout needed)
+  const handleScroll = useCallback(() => {
+    // Just ensure scrollbar stays visible while scrolling
+    // No timeout needed since hover state handles visibility
+  }, []);
+
+  // Handle mouse enter/leave for hover scrollbar
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  // Handle mouse wheel events for scrolling
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    // Allow scrolling even when not focused
+    e.preventDefault();
+    const container = e.currentTarget;
+    container.scrollTop += e.deltaY;
+  }, []);
+
   return (
     <div className={cn('relative h-full', className)}>
       {/* Text Editor Area - Fixed width, scrollable */}
-      <div className="max-w-4xl mx-auto overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
+      <div 
+        className={cn(
+          "max-w-4xl mx-auto overflow-y-auto transition-all duration-300",
+          isHovering ? "scrollbar-visible" : "scrollbar-hidden"
+        )}
+        style={{ height: 'calc(100vh - 120px)' }}
+        onScroll={handleScroll}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
+        tabIndex={-1}
+      >
         <div
           ref={editorRef}
           className="w-full p-6 text-lg leading-relaxed focus:outline-none bg-transparent border-none"
