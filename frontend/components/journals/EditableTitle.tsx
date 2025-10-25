@@ -14,6 +14,8 @@ interface EditableTitleProps {
   onUpdate: (newTitle: string) => Promise<void>;
   className?: string;
   maxLength?: number;
+  startEditing?: boolean;
+  onFinishEditing?: () => void;
 }
 
 export const EditableTitle = React.memo(function EditableTitle({
@@ -21,8 +23,10 @@ export const EditableTitle = React.memo(function EditableTitle({
   onUpdate,
   className,
   maxLength = 100,
+  startEditing = false,
+  onFinishEditing,
 }: EditableTitleProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(startEditing);
   const [editValue, setEditValue] = useState(title);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +49,7 @@ export const EditableTitle = React.memo(function EditableTitle({
     
     if (trimmedValue === title || trimmedValue.length === 0) {
       setIsEditing(false);
+      onFinishEditing?.();
       return;
     }
 
@@ -52,13 +57,14 @@ export const EditableTitle = React.memo(function EditableTitle({
     try {
       await onUpdate(trimmedValue);
       setIsEditing(false);
+      onFinishEditing?.();
     } catch (error) {
       console.error('Failed to update title:', error);
       // Keep editing mode open on error
     } finally {
       setIsLoading(false);
     }
-  }, [editValue, title, onUpdate]);
+  }, [editValue, title, onUpdate, onFinishEditing]);
 
   const handleBlur = useCallback(() => {
     // Auto-save when user clicks away
@@ -73,8 +79,9 @@ export const EditableTitle = React.memo(function EditableTitle({
       e.preventDefault();
       setEditValue(title);
       setIsEditing(false);
+      onFinishEditing?.();
     }
-  }, [handleSave, title]);
+  }, [handleSave, title, onFinishEditing]);
 
   if (isEditing) {
     return (

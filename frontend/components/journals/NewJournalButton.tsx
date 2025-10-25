@@ -44,21 +44,20 @@ export const NewButton = React.memo(function NewButton({
       <DropdownMenuTrigger asChild>
         <Button
           disabled={disabled}
-          variant="default"
-          className={className}
-          size="default"
+          className={`${className} !bg-claude-accent hover:!bg-claude-accent/90`}
+          size="sm"
         >
           <Plus className="h-4 w-4 mr-2" />
           <span className="text-sm">New Journal</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuItem onClick={handleNewChat} className="cursor-pointer text-base">
-          <MessageSquare className="h-4 w-4 mr-2" />
+      <DropdownMenuContent align="start" className="w-32">
+        <DropdownMenuItem onClick={handleNewChat} className="cursor-pointer text-[17px] py-0">
+          <MessageSquare className="h-3 w-3 mr-2" />
           <span>Chat</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleNewWrite} className="cursor-pointer text-base">
-          <PenTool className="h-4 w-4 mr-2" />
+        <DropdownMenuItem onClick={handleNewWrite} className="cursor-pointer text-[17px] py-0">
+          <PenTool className="h-3 w-3 mr-2" />
           <span>Write</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

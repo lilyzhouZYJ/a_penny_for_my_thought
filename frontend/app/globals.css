@@ -32,8 +32,8 @@
     --claude-border: 30 15% 85%;
     --claude-text: 30 15% 20%;
     --claude-text-muted: 30 10% 40%;
-    --claude-accent: 30 15% 20%;
-    --claude-hover: 30 15% 88%;
+    --claude-accent: 30 30% 60%;
+    --claude-hover: 30 12% 88%;
     --claude-user-message: 30 15% 20%;
     --claude-assistant-message: 30 20% 98%;
     --claude-warm-accent: 25 20% 35%;
@@ -67,7 +67,7 @@
     --claude-border: 30 15% 20%;
     --claude-text: 30 10% 85%;
     --claude-text-muted: 30 10% 40%;
-    --claude-accent: 30 10% 85%;
+    --claude-accent: 30 20% 70%;
     --claude-hover: 30 15% 15%;
     --claude-user-message: 30 10% 85%;
     --claude-assistant-message: 30 15% 12%;

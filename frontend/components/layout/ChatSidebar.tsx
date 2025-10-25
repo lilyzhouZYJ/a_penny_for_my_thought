@@ -74,7 +74,7 @@ const SidebarContent = React.memo(function SidebarContent({
         <NewButton
           onNewChat={handleNewChat}
           onNewWrite={onNewWrite || (() => {})}
-          className="w-full min-h-[48px] claude-button" // Touch-friendly
+          className="w-full min-h-[30px] claude-button" // Touch-friendly
         />
       </div>
 

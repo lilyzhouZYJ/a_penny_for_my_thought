@@ -60,7 +60,7 @@ export const ChatInput = React.memo(function ChatInput({
           onClick={handleSend}
           disabled={disabled || !input.trim()}
           size="icon"
-          className="h-[60px] w-[60px] shrink-0 min-w-[44px] min-h-[44px] claude-button" // Touch-friendly minimum
+          className="h-[60px] w-[60px] shrink-0 min-w-[44px] min-h-[44px] !bg-claude-accent hover:!bg-claude-accent/90" // Touch-friendly minimum
           aria-label="Send message"
         >
           <Send className="h-5 w-5" />

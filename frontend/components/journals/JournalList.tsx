@@ -105,6 +105,10 @@ export const JournalList = React.memo(function JournalList({
     setEditingJournalId(journalId);
   }, []);
 
+  const handleFinishEditing = useCallback(() => {
+    setEditingJournalId(null);
+  }, []);
+
   useEffect(() => {
     loadJournals();
   }, [loadJournals]);
@@ -181,6 +185,8 @@ export const JournalList = React.memo(function JournalList({
                       title={journal.title || 'Untitled Journal'}
                       onUpdate={(newTitle) => handleUpdateTitle(journal.id, newTitle)}
                       className="mb-0"
+                      startEditing={true}
+                      onFinishEditing={handleFinishEditing}
                     />
                   ) : (
                     <div className="flex-1 min-w-0">
@@ -195,25 +201,26 @@ export const JournalList = React.memo(function JournalList({
                 </div>
               </div>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-claude-text flex-shrink-0 ml-2 focus:ring-0 focus:outline-none border-0"
-                    onClick={(e) => e.stopPropagation()}
-                    title="Journal options"
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
+              {editingJournalId !== journal.id && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-claude-text flex-shrink-0 ml-2 focus:ring-0 focus:outline-none border-0"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Journal options"
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-32">
                   <DropdownMenuItem 
                     onClick={(e) => {
                       e.stopPropagation();
                       handleStartRename(journal.id);
                     }}
-                    className="text-[17px] cursor-pointer"
+                    className="text-[17px] cursor-pointer py-0"
                   >
                     <Edit2 className="h-3 w-3 mr-2" />
                     Rename
@@ -223,13 +230,14 @@ export const JournalList = React.memo(function JournalList({
                       e.stopPropagation();
                       handleDeleteJournal(journal.id, journal.title);
                     }}
-                    className="text-[17px] cursor-pointer text-destructive focus:text-destructive"
+                    className="text-[17px] cursor-pointer text-destructive focus:text-destructive py-0"
                   >
                     <Trash2 className="h-3 w-3 mr-2" />
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         ))}
