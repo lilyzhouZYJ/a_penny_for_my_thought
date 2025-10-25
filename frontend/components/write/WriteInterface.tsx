@@ -5,14 +5,13 @@
  */
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { MessageList } from '@/components/chat/MessageList';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { MarkdownEditor } from './MarkdownEditor';
 import { useWrite } from '@/lib/context/WriteContext';
 import { cn } from '@/lib/utils';
 import { parseApiError, isRecoverableError } from '@/lib/utils/error-handlers';
-import { MessageCircle, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 
 interface WriteInterfaceProps {
   className?: string;
@@ -23,7 +22,6 @@ export const WriteInterface = React.memo(function WriteInterface({
 }: WriteInterfaceProps) {
   const { 
     writeContent, 
-    messages, 
     isLoading, 
     isStreaming, 
     streamingContent, 
@@ -35,7 +33,6 @@ export const WriteInterface = React.memo(function WriteInterface({
   
   const [localContent, setLocalContent] = useState(writeContent);
   const [isSaving, setIsSaving] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Update local content when writeContent changes
@@ -77,15 +74,15 @@ export const WriteInterface = React.memo(function WriteInterface({
     }
   }, [localContent, updateWriteContent]);
 
-  const handleAskAI = useCallback(async () => {
-    if (!localContent.trim()) return;
+  const handleAskAI = useCallback(async (content: string, cursorPosition: number) => {
+    if (!content.trim()) return;
     
     try {
-      await askAIForInput(localContent);
+      await askAIForInput(content);
     } catch (err) {
       console.error('Failed to ask AI:', err);
     }
-  }, [localContent, askAIForInput]);
+  }, [askAIForInput]);
 
   const handleDismissError = useCallback(() => {
     setError(null);
@@ -93,7 +90,7 @@ export const WriteInterface = React.memo(function WriteInterface({
 
   const handleRetry = useCallback(() => {
     if (localContent.trim()) {
-      handleAskAI();
+      handleAskAI(localContent, 0);
     }
   }, [localContent, handleAskAI]);
 
@@ -111,58 +108,34 @@ export const WriteInterface = React.memo(function WriteInterface({
       )}
 
       {/* Write area */}
-      <div className="flex-1 flex flex-col p-4">
-        <div className="flex-1 flex flex-col space-y-4">
-          {/* Write content textarea */}
-          <div className="flex-1 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-semibold text-claude-text">Your Journal</h2>
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={handleManualSave}
-                  disabled={isSaving || !localContent.trim()}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  {isSaving ? 'Saving...' : 'Save'}
-                </Button>
-                <Button
-                  onClick={handleAskAI}
-                  disabled={isLoading || !localContent.trim()}
-                  variant="default"
-                  size="sm"
-                >
-                  <MessageCircle className="h-4 w-4 mr-1" />
-                  Ask AI
-                </Button>
-              </div>
-            </div>
-            
-            <Textarea
-              ref={textareaRef}
-              value={localContent}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Write your thoughts here... (Auto-saves as you type)"
-              className="flex-1 resize-none text-lg leading-relaxed"
-              disabled={isLoading}
-            />
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-semibold text-claude-text">Your Journal</h2>
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={handleManualSave}
+              disabled={isSaving || !localContent.trim()}
+              variant="outline"
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
           </div>
-
-          {/* AI Messages */}
-          {messages.length > 0 && (
-            <div className="flex-shrink-0">
-              <div className="border-t border-claude-border pt-4">
-                <h3 className="text-base font-medium text-claude-text-muted mb-3">AI Responses</h3>
-                <MessageList 
-                  messages={messages} 
-                  isLoading={isLoading} 
-                  isStreaming={isStreaming}
-                  streamingContent={streamingContent}
-                />
-              </div>
-            </div>
-          )}
+        </div>
+        
+        {/* Markdown Editor */}
+        <div className="flex-1">
+          <MarkdownEditor
+            content={localContent}
+            onContentChange={handleContentChange}
+            onAskAI={handleAskAI}
+            isLoading={isLoading}
+            isStreaming={isStreaming}
+            streamingContent={streamingContent}
+            className="h-full"
+          />
         </div>
       </div>
     </div>

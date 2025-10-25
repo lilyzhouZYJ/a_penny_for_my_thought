@@ -311,4 +311,69 @@ Please provide a thoughtful, therapeutic response that acknowledges their feelin
         except Exception as e:
             logger.error(f"Therapeutic response generation failed: {e}")
             raise LLMError(str(e))
+    
+    async def stream_therapeutic_response(
+        self,
+        journal_content: str,
+        conversation_history: List[Dict]
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream therapeutic response to journal content.
+        
+        Args:
+            journal_content: The main journal content
+            conversation_history: Previous AI interactions
+        
+        Yields:
+            Token strings as they are generated
+        
+        Raises:
+            LLMError: If API call fails
+        """
+        try:
+            client = self.get_async_client(self.api_key)
+            
+            # Build conversation context
+            context = ""
+            if conversation_history:
+                context = "\nPrevious conversation:\n"
+                for msg in conversation_history[-4:]:  # Last 4 messages for context
+                    role = "User" if msg.get("role") == "user" else "Assistant"
+                    context += f"{role}: {msg.get('content', '')}\n"
+            
+            prompt = f"""You are a compassionate, professional therapist providing thoughtful responses to journal entries. Your role is to:
+
+1. Acknowledge the person's feelings and experiences with empathy
+2. Offer gentle insights and observations
+3. Ask thoughtful questions to encourage deeper reflection
+4. Provide supportive guidance without being prescriptive
+5. Maintain a warm, non-judgmental tone
+
+Journal Entry:
+{journal_content[:2000]}
+
+{context}
+
+Please provide a thoughtful, therapeutic response that acknowledges their feelings and offers gentle guidance. Keep it conversational and supportive, as if you're responding in a chat bubble. Do not include any formatting or quotes."""
+            
+            stream = await client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "You are a compassionate therapist providing supportive responses to journal entries."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=500,
+                stream=True
+            )
+            
+            async for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+            
+            logger.info("Therapeutic response streaming completed")
+            
+        except Exception as e:
+            logger.error(f"Therapeutic response streaming failed: {e}")
+            raise LLMError(str(e))
 

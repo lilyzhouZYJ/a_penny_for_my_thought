@@ -37,7 +37,7 @@ export default function WriteSessionPage() {
   );
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar - Hidden on mobile, shown on md+ */}
       <ChatSidebar
         onSelectJournal={handleSelectJournal}
@@ -49,7 +49,7 @@ export default function WriteSessionPage() {
       />
 
       {/* Main write area - Full width on mobile, flex-1 on desktop */}
-      <main className="flex-1 w-full overflow-hidden">
+      <main className="flex-1 w-full h-full">
         <WriteInterface />
       </main>
     </div>

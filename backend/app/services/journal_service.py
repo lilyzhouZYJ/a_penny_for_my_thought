@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, AsyncGenerator
 
-from app.models import Journal, JournalMetadata, Message, UpdateWriteContentRequest, AskAIRequest
+from app.models import Journal, JournalMetadata, Message, UpdateWriteContentRequest, AskAIRequest, StreamEvent
 from app.services.llm_service import LLMService
 from app.services.rag_service import RAGService
 from app.storage.database import DatabaseStorage
@@ -308,6 +308,84 @@ class JournalService:
         except Exception as e:
             logger.error(f"Failed to get AI input: {e}")
             raise
+    
+    async def stream_ai_for_input(
+        self,
+        session_id: str,
+        content: str,
+        conversation_history: List[Message],
+        journal_id: Optional[str] = None
+    ) -> AsyncGenerator[StreamEvent, None]:
+        """
+        Stream AI input for write mode content.
+        
+        Args:
+            session_id: Session UUID
+            content: The write mode content
+            conversation_history: Previous AI interactions
+            journal_id: Optional journal ID
+        
+        Yields:
+            StreamEvent objects (token, done, or error events)
+        """
+        try:
+            # Stream therapeutic response from LLM
+            full_response = ""
+            async for token in self.llm_service.stream_therapeutic_response(
+                journal_content=content,
+                conversation_history=conversation_history
+            ):
+                full_response += token
+                yield StreamEvent(
+                    type="token",
+                    data={"token": token}
+                )
+            
+            # Create AI message
+            from datetime import datetime, timezone
+            ai_message = Message(
+                role="assistant",
+                content=full_response,
+                timestamp=datetime.now(timezone.utc)
+            )
+            
+            # Add to conversation history
+            updated_messages = conversation_history + [ai_message]
+            
+            # Save the updated conversation
+            await self.save_journal(
+                session_id=session_id,
+                messages=updated_messages,
+                journal_id=journal_id,
+                mode="write"
+            )
+            
+            # Send completion event
+            yield StreamEvent(
+                type="done",
+                data={
+                    "message": {
+                        "role": ai_message.role,
+                        "content": ai_message.content,
+                        "timestamp": ai_message.timestamp.isoformat()
+                    },
+                    "conversation_history": [
+                        {
+                            "role": msg.role,
+                            "content": msg.content,
+                            "timestamp": msg.timestamp.isoformat()
+                        }
+                        for msg in updated_messages
+                    ]
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to stream AI input: {e}")
+            yield StreamEvent(
+                type="error",
+                data={"message": str(e)}
+            )
     
     async def _generate_title_from_content(self, content: str) -> str:
         """

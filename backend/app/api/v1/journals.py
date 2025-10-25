@@ -1,7 +1,9 @@
+import json
 import logging
-from typing import List
+from typing import List, AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 
 from app.models import (
     CreateJournalRequest,
@@ -253,6 +255,66 @@ async def ask_ai_for_input(
             status_code=500,
             detail=f"Failed to get AI input: {str(e)}"
         )
+
+
+@router.post("/ask-ai/stream")
+async def ask_ai_for_input_stream(
+    request: AskAIRequest,
+    journal_service: JournalService = Depends(get_journal_service)
+):
+    """
+    Stream AI input for write mode content using Server-Sent Events (SSE).
+    
+    Args:
+        request: AI input request
+        journal_service: Injected JournalService
+    
+    Returns:
+        StreamingResponse with SSE events
+    
+    Event Types:
+        - token: Individual tokens from AI
+        - done: Completion metadata
+        - error: Error information
+    """
+    
+    async def event_generator() -> AsyncGenerator[str, None]:
+        """Generate SSE events."""
+        try:
+            logger.info(f"Streaming AI input for write content: session={request.session_id}")
+            
+            async for event in journal_service.stream_ai_for_input(
+                session_id=request.session_id,
+                content=request.content,
+                conversation_history=request.conversation_history,
+                journal_id=request.journal_id
+            ):
+                # Format as SSE: "data: {json}\n\n"
+                event_data = json.dumps({
+                    "type": event.type,
+                    "data": event.data
+                })
+                yield f"data: {event_data}\n\n"
+            
+            logger.info("AI input streaming completed")
+            
+        except Exception as e:
+            logger.error(f"AI input streaming error: {e}")
+            # Send error event
+            error_data = json.dumps({
+                "type": "error",
+                "data": {"message": str(e)}
+            })
+            yield f"data: {error_data}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
 @router.put("/title", response_model=JournalMetadata)
 async def update_journal_title(

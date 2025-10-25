@@ -4,11 +4,12 @@
  * Write Context for global write mode state management.
  */
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Message } from '@/lib/types/chat';
 import { JournalMetadata } from '@/lib/types/journal';
 import { updateWriteContent, askAIForInput, getJournal } from '@/lib/api/journals';
+import { config } from '@/lib/config';
 
 interface WriteContextType {
   // State
@@ -60,9 +61,15 @@ export function WriteProvider({ children }: { children: ReactNode }) {
   const [currentJournalId, setCurrentJournalId] = useState<string | null>(null);
   const [journalRefreshTrigger, setJournalRefreshTrigger] = useState(0);
   
-  const updateWriteContentAction = useCallback(async (content: string) => {
+  // Debounce timer ref
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Immediate update function (for internal use)
+  const updateWriteContentImmediate = useCallback(async (content: string) => {
     setIsLoading(true);
     setError(null);
+    
+    console.log('Saving content:', JSON.stringify(content)); // Debug log
     
     try {
       const result = await updateWriteContent(
@@ -87,32 +94,129 @@ export function WriteProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [sessionId, currentJournalId]);
+
+  // Debounced update function (for user typing)
+  const updateWriteContentAction = useCallback(async (content: string) => {
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Return a promise that resolves when the debounce timer is set
+    return new Promise<void>((resolve) => {
+      debounceTimerRef.current = setTimeout(() => {
+        updateWriteContentImmediate(content).finally(() => resolve());
+      }, 1000); // 1 second debounce
+    });
+  }, [updateWriteContentImmediate]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
   
   const askAIForInputAction = useCallback(async (content: string) => {
     setIsLoading(true);
+    setIsStreaming(true);
     setError(null);
+    setStreamingContent('');
     
     try {
-      const response = await askAIForInput(
-        sessionId,
-        content,
-        messages,
-        currentJournalId
-      );
-      
-      // Add the AI message to the conversation history
-      setMessages(prev => [...prev, response.message]);
-      
-      // Update the conversation history
-      setMessages(response.conversation_history);
+      // Use streaming API
+      const response = await fetch(`${config.apiUrl}/api/v1/journals/ask-ai/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          journal_id: currentJournalId,
+          content: content,
+          conversation_history: messages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'token') {
+                  fullResponse += data.data.token;
+                  setStreamingContent(fullResponse);
+                } else if (data.type === 'done') {
+                  // Create AI message
+                  const aiMessage: Message = {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: fullResponse,
+                    timestamp: new Date().toISOString()
+                  };
+                  
+                  // Update conversation history
+                  const updatedMessages = [...messages, aiMessage];
+                  setMessages(updatedMessages);
+                  
+                  // Append AI response to the write content as italicized text
+                  const aiResponse = `*${fullResponse}*`;
+                  const updatedContent = content.trim() 
+                    ? `${content}\n\n${aiResponse}`
+                    : aiResponse;
+                  
+                  setWriteContent(updatedContent);
+                  
+                  // Auto-save the updated content (use immediate save for AI responses)
+                  try {
+                    await updateWriteContentImmediate(updatedContent);
+                  } catch (saveErr) {
+                    console.error('Failed to auto-save AI response:', saveErr);
+                  }
+                } else if (data.type === 'error') {
+                  throw new Error(data.data.message);
+                }
+              } catch (parseErr) {
+                console.error('Failed to parse SSE data:', parseErr);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get AI input';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingContent('');
     }
-  }, [sessionId, messages, currentJournalId]);
+  }, [sessionId, messages, currentJournalId, updateWriteContentAction]);
   
   const loadSession = useCallback(async (sessionIdToLoad: string) => {
     setIsLoading(true);
@@ -122,9 +226,16 @@ export function WriteProvider({ children }: { children: ReactNode }) {
       // Load journal from database
       const journal = await getJournal(sessionIdToLoad);
       
-      // Extract write content from the first user message (if any)
-      const firstUserMessage = journal.messages.find(msg => msg.role === 'user');
-      const writeContent = firstUserMessage?.content || '';
+      // Extract write content from the most recent user message (if any)
+      const userMessages = journal.messages.filter(msg => msg.role === 'user');
+      const mostRecentUserMessage = userMessages[userMessages.length - 1];
+      const writeContent = mostRecentUserMessage?.content || '';
+      
+      console.log('Loaded journal:', {
+        totalMessages: journal.messages.length,
+        userMessages: userMessages.length,
+        writeContent: JSON.stringify(writeContent)
+      });
       
       // Set state from loaded journal
       setWriteContent(writeContent);
