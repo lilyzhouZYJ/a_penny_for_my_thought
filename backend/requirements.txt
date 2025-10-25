@@ -6,7 +6,7 @@ pydantic-settings==2.1.0
 python-dotenv==1.0.0
 
 # LLM & AI
-openai==1.12.0
+openai==1.55.3
 langchain-openai==0.0.6
 
 # Vector Store
@@ -21,5 +21,5 @@ tiktoken==0.6.0
 # Development
 pytest==7.4.4
 pytest-asyncio==0.23.4
-httpx==0.26.0
+httpx==0.27.2
 

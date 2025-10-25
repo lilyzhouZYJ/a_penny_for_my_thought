@@ -20,7 +20,7 @@ interface WriteContextType {
   streamingContent: string;
   error: string | null;
   currentJournalId: string | null;
-  conversationRefreshTrigger: number;
+  journalRefreshTrigger: number;
   
   // Actions
   updateWriteContent: (content: string) => Promise<void>;
@@ -31,7 +31,7 @@ interface WriteContextType {
   
   // Utility
   setError: (error: string | null) => void;
-  refreshConversations: () => void;
+  refreshJournals: () => void;
 }
 
 const WriteContext = createContext<WriteContextType | undefined>(undefined);
@@ -58,7 +58,7 @@ export function WriteProvider({ children }: { children: ReactNode }) {
   const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentJournalId, setCurrentJournalId] = useState<string | null>(null);
-  const [conversationRefreshTrigger, setConversationRefreshTrigger] = useState(0);
+  const [journalRefreshTrigger, setJournalRefreshTrigger] = useState(0);
   
   const updateWriteContentAction = useCallback(async (content: string) => {
     setIsLoading(true);
@@ -77,7 +77,7 @@ export function WriteProvider({ children }: { children: ReactNode }) {
       
       // If this was the first write, refresh the conversation list
       if (!currentJournalId) {
-        setConversationRefreshTrigger(prev => prev + 1);
+        setJournalRefreshTrigger(prev => prev + 1);
       }
       
     } catch (err) {
@@ -150,9 +150,9 @@ export function WriteProvider({ children }: { children: ReactNode }) {
     return newSessionId;
   }, []);
   
-  const refreshConversations = useCallback(() => {
-    // Trigger conversation list refresh by incrementing the trigger
-    setConversationRefreshTrigger(prev => prev + 1);
+  const refreshJournals = useCallback(() => {
+    // Trigger journal list refresh by incrementing the trigger
+    setJournalRefreshTrigger(prev => prev + 1);
   }, []);
   
   const handleNewWrite = useCallback(() => {
@@ -169,14 +169,14 @@ export function WriteProvider({ children }: { children: ReactNode }) {
     streamingContent,
     error,
     currentJournalId,
-    conversationRefreshTrigger,
+    journalRefreshTrigger,
     updateWriteContent: updateWriteContentAction,
     askAIForInput: askAIForInputAction,
     loadSession,
     clearWrite,
     handleNewWrite,
     setError,
-    refreshConversations,
+    refreshJournals,
   };
   
   return <WriteContext.Provider value={value}>{children}</WriteContext.Provider>;

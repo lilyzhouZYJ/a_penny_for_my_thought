@@ -53,7 +53,7 @@ export async function getAllJournals(
 /**
  * Get a specific journal by ID.
  * 
- * Used to load past conversations into the chat interface.
+ * Used to load past journals into the chat interface.
  * Loads from markdown file, NOT from vector database.
  * 
  * @param journalId - Journal filename

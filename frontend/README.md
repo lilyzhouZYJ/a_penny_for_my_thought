@@ -62,9 +62,9 @@ frontend/
 │   │   ├── Message.tsx          # Individual message with markdown
 │   │   ├── MessageList.tsx      # Scrollable message list
 │   │   └── StreamingMessage.tsx # Real-time streaming display
-│   ├── conversations/     # Conversation management
-│   │   ├── ConversationList.tsx # Past conversations with auto-refresh
-│   │   └── NewConversationButton.tsx # New conversation trigger
+│   ├── journals/     # Journal management
+│   │   ├── JournalList.tsx # Past journals with auto-refresh
+│   │   └── NewJournalButton.tsx # New journal trigger
 │   ├── layout/           # Layout components
 │   │   └── ChatSidebar.tsx # Responsive sidebar/drawer
 │   ├── shared/           # Shared UI components
@@ -126,7 +126,7 @@ npm test ChatContext.test.tsx
 ### Layout Components
 
 - **ChatSidebar**: Responsive sidebar (desktop) / drawer (mobile) with touch-friendly navigation
-- **ConversationList**: List of past conversations with auto-refresh, delete functionality, and loading states
+- **JournalList**: List of past journals with auto-refresh, delete functionality, and loading states
 
 ### Shared Components
 
@@ -186,7 +186,7 @@ interface ChatContextType {
   sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
   loadSession: (journalId: string) => Promise<void>;
   clearChat: () => string;
-  handleNewConversation: () => void;
+  handleNewJournal: () => void;
   setError: (error: string | null) => void;
 }
 ```
@@ -218,13 +218,13 @@ for await (const event of streamChatMessage(message, sessionId, history)) {
 ### Journal API
 
 ```typescript
-// List conversations
-const conversations = await getAllJournals(limit, offset);
+// List journals
+const journals = await getAllJournals(limit, offset);
 
-// Load conversation
+// Load journal
 const journal = await getJournal(journalId);
 
-// Save conversation
+// Save journal
 const metadata = await saveJournal(sessionId, messages, journalId);
 ```
 
@@ -245,8 +245,8 @@ const metadata = await saveJournal(sessionId, messages, journalId);
 
 ### URL Routing
 
-- **Shareable Links**: Copy URL to share specific conversations
-- **Deep Linking**: Open app directly to a conversation
+- **Shareable Links**: Copy URL to share specific journals
+- **Deep Linking**: Open app directly to a journal
 - **Browser History**: Back/forward navigation support
 
 ### Error Handling

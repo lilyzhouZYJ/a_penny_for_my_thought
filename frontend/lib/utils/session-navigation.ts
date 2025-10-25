@@ -2,20 +2,31 @@
  * Shared utilities for session navigation.
  */
 
-import { getJournal } from '@/lib/api/journals';
-
 /**
  * Handle session selection by checking the session's mode and routing accordingly.
  * 
  * @param selectedSessionId - The session ID to navigate to
  * @param router - Next.js router instance
+ * @param mode - Optional mode hint to avoid API call
  */
 export async function handleSessionSelection(
   selectedSessionId: string,
-  router: any
+  router: any,
+  mode?: "chat" | "write"
 ): Promise<void> {
   try {
-    // Try to get the journal to check its mode
+    // If mode is provided, use it directly to avoid API call
+    if (mode) {
+      if (mode === 'write') {
+        router.push(`/write/${selectedSessionId}`);
+      } else {
+        router.push(`/chat/${selectedSessionId}`);
+      }
+      return;
+    }
+
+    // Fallback: Try to get the journal to check its mode (only if mode not provided)
+    const { getJournal } = await import('@/lib/api/journals');
     const journal = await getJournal(selectedSessionId);
     
     // Route based on the journal's mode

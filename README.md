@@ -57,7 +57,7 @@ An LLM-powered journaling web app, built with FastAPI and Next.js. The applicati
 │   ├── app/         # Next.js App Router pages
 │   ├── components/  # React components
 │   │   ├── chat/    # Chat interface components
-│   │   ├── conversations/ # Conversation management
+│   │   ├── journals/    # Journal management
 │   │   ├── layout/ # Layout components
 │   │   └── ui/      # shadcn/ui components
 │   └── lib/         # Utilities, API clients, and context

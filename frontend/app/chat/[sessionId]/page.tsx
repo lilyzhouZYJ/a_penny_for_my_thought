@@ -15,7 +15,7 @@ import { handleSessionSelection } from '@/lib/utils/session-navigation';
 export default function ChatSessionPage() {
   const params = useParams();
   const router = useRouter();
-  const { sessionId, loadSession, handleNewConversation, conversationRefreshTrigger } = useChat();
+  const { sessionId, loadSession, handleNewJournal, journalRefreshTrigger } = useChat();
   const { handleNewWrite } = useWrite();
   const urlSessionId = params.sessionId as string;
 
@@ -29,9 +29,9 @@ export default function ChatSessionPage() {
     }
   }, [urlSessionId, sessionId, loadSession, router]);
 
-  const handleSelectConversation = React.useCallback(
-    async (selectedSessionId: string) => {
-      await handleSessionSelection(selectedSessionId, router);
+  const handleSelectJournal = React.useCallback(
+    async (selectedSessionId: string, mode: "chat" | "write") => {
+      await handleSessionSelection(selectedSessionId, router, mode);
     },
     [router]
   );
@@ -40,12 +40,12 @@ export default function ChatSessionPage() {
     <div className="flex h-screen bg-background">
       {/* Sidebar - Hidden on mobile, shown on md+ */}
       <ChatSidebar
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
+        onSelectJournal={handleSelectJournal}
+        onNewJournal={handleNewJournal}
         onNewWrite={handleNewWrite}
         currentSessionId={sessionId}
         className="shrink-0"
-        conversationRefreshTrigger={conversationRefreshTrigger}
+        journalRefreshTrigger={journalRefreshTrigger}
       />
 
       {/* Main chat area - Full width on mobile, flex-1 on desktop */}

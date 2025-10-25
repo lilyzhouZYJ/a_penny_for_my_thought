@@ -8,7 +8,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { useRouter } from 'next/navigation';
 import { Message } from '@/lib/types/chat';
 import { JournalMetadata } from '@/lib/types/journal';
-import { sendChatMessage, streamChatMessage, loadChatHistory } from '@/lib/api/chat';
+import { sendChatMessage, streamChatMessage } from '@/lib/api/chat';
 import { getJournal } from '@/lib/api/journals';
 
 interface ChatContextType {
@@ -20,17 +20,17 @@ interface ChatContextType {
   streamingContent: string;
   error: string | null;
   currentJournalId: string | null;
-  conversationRefreshTrigger: number;
+  journalRefreshTrigger: number;
   
   // Actions
   sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
   loadSession: (sessionId: string) => Promise<void>;
   clearChat: () => string;
-  handleNewConversation: () => void;
+  handleNewJournal: () => void;
   
   // Utility
   setError: (error: string | null) => void;
-  refreshConversations: () => void;
+  refreshJournals: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -55,7 +55,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentJournalId, setCurrentJournalId] = useState<string | null>(null);
-  const [conversationRefreshTrigger, setConversationRefreshTrigger] = useState(0);
+  const [journalRefreshTrigger, setJournalRefreshTrigger] = useState(0);
   
   const sendMessage = useCallback(async (content: string, useStreaming: boolean = true) => {
     setIsLoading(true);
@@ -90,7 +90,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       // If this was the first message in a new conversation, refresh the conversation list
       if (wasFirstMessage) {
-        setConversationRefreshTrigger(prev => prev + 1);
+        setJournalRefreshTrigger(prev => prev + 1);
       }
       
     } catch (err) {
@@ -152,21 +152,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setMessages(prev => [...prev, response.message]);
   }, [sessionId]);
   
-  const loadSession = useCallback(async (sessionIdToLoad: string) => {
+  const loadSession = useCallback(async (journalIdToLoad: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Load chat history from database
-      const historyMessages = await loadChatHistory(sessionIdToLoad);
+      // Load journal from database
+      const journal = await getJournal(journalIdToLoad);
       
-      // Set state from loaded history
-      setMessages(historyMessages);
-      setSessionId(sessionIdToLoad);
-      setCurrentJournalId(sessionIdToLoad);  // Use session ID as journal ID for database storage
+      // Set state from loaded journal
+      setMessages(journal.messages);
+      setSessionId(journalIdToLoad);
+      setCurrentJournalId(journalIdToLoad);
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load session';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load journal';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -182,12 +182,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return newSessionId;
   }, []);
   
-  const refreshConversations = useCallback(() => {
-    // Trigger conversation list refresh by incrementing the trigger
-    setConversationRefreshTrigger(prev => prev + 1);
+  const refreshJournals = useCallback(() => {
+    // Trigger journal list refresh by incrementing the trigger
+    setJournalRefreshTrigger(prev => prev + 1);
   }, []);
   
-  const handleNewConversation = useCallback(() => {
+  const handleNewJournal = useCallback(() => {
     const newSessionId = clearChat();
     router.push(`/chat/${newSessionId}`);
   }, [clearChat, router]);
@@ -200,13 +200,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     streamingContent,
     error,
     currentJournalId,
-    conversationRefreshTrigger,
+    journalRefreshTrigger,
     sendMessage,
     loadSession,
     clearChat,
-    handleNewConversation,
+    handleNewJournal,
     setError,
-    refreshConversations,
+    refreshJournals,
   };
   
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

@@ -19,7 +19,7 @@ const API_URL = config.apiUrl;
  * 
  * Features:
  * - In-conversation memory (send full conversation history)
- * - RAG context from past conversations
+ * - RAG context from past journals
  * - Automatic saving after response
  * 
  * @param message - User's message
@@ -147,21 +147,9 @@ export async function* streamChatMessage(
  * @returns List of messages in chronological order
  */
 export async function loadChatHistory(sessionId: string): Promise<Message[]> {
-  const response = await fetch(`${API_URL}/api/v1/chat/history/${sessionId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      detail: 'Failed to load chat history',
-    }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-
-  return await response.json();
+  // This function is deprecated - use getJournal from journals.ts instead
+  // The backend doesn't have a chat/history endpoint
+  throw new Error('loadChatHistory is deprecated. Use getJournal from journals API instead.');
 }
 
 /**
@@ -183,21 +171,34 @@ export async function listJournals(
     sort_by: sortBy,
   });
 
-  const response = await fetch(`${API_URL}/api/v1/chat/journals?${params}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      detail: 'Failed to list journals',
-    }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    const response = await fetch(`${API_URL}/api/v1/chat/journals?${params}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        detail: 'Failed to list journals',
+      }));
+      throw new Error(error.detail || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw error;
   }
-
-  return await response.json();
 }
 
 /**

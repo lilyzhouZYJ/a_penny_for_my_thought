@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import List
+import json
 
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -28,6 +30,19 @@ class Settings(BaseSettings):
     
     # CORS Configuration
     cors_origins: List[str] = ["http://localhost:3000"]
+    
+    @field_validator('cors_origins', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from string or list."""
+        if isinstance(v, str):
+            try:
+                # Try to parse as JSON array
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If not JSON, split by comma and strip whitespace
+                return [origin.strip() for origin in v.split(',')]
+        return v
     
     # LLM Configuration
     llm_temperature: float = 0.7

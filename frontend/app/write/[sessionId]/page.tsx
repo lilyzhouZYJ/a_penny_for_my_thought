@@ -15,8 +15,8 @@ import { handleSessionSelection } from '@/lib/utils/session-navigation';
 export default function WriteSessionPage() {
   const params = useParams();
   const router = useRouter();
-  const { sessionId, loadSession, handleNewWrite, conversationRefreshTrigger } = useWrite();
-  const { handleNewConversation } = useChat();
+  const { sessionId, loadSession, handleNewWrite, journalRefreshTrigger } = useWrite();
+  const { handleNewJournal } = useChat();
   const urlSessionId = params.sessionId as string;
 
   // Load the session when the page loads
@@ -29,9 +29,9 @@ export default function WriteSessionPage() {
     }
   }, [urlSessionId, sessionId, loadSession, router]);
 
-  const handleSelectConversation = React.useCallback(
-    async (selectedSessionId: string) => {
-      await handleSessionSelection(selectedSessionId, router);
+  const handleSelectJournal = React.useCallback(
+    async (selectedSessionId: string, mode: "chat" | "write") => {
+      await handleSessionSelection(selectedSessionId, router, mode);
     },
     [router]
   );
@@ -40,12 +40,12 @@ export default function WriteSessionPage() {
     <div className="flex h-screen bg-background">
       {/* Sidebar - Hidden on mobile, shown on md+ */}
       <ChatSidebar
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
+        onSelectJournal={handleSelectJournal}
+        onNewJournal={handleNewJournal}
         onNewWrite={handleNewWrite}
         currentSessionId={sessionId}
         className="shrink-0"
-        conversationRefreshTrigger={conversationRefreshTrigger}
+        journalRefreshTrigger={journalRefreshTrigger}
       />
 
       {/* Main write area - Full width on mobile, flex-1 on desktop */}

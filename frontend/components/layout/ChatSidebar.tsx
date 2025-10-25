@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * ChatSidebar component for conversation navigation.
+ * ChatSidebar component for journal navigation.
  * Responsive: Fixed sidebar on desktop, drawer on mobile.
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ConversationList } from '@/components/conversations/ConversationList';
-import { NewButton } from '@/components/conversations/NewButton';
+import { JournalList } from '@/components/journals/JournalList';
+import { NewButton } from '@/components/journals/NewJournalButton';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,12 @@ import { cn } from '@/lib/utils';
 import { useSidebarWidth } from '@/lib/hooks/useSidebarWidth';
 
 interface ChatSidebarProps {
-  onSelectConversation: (sessionId: string) => void;
-  onNewConversation: () => void;
+  onSelectJournal: (sessionId: string, mode: "chat" | "write") => void;
+  onNewJournal: () => void;
   onNewWrite?: () => void;
   currentSessionId?: string;
   className?: string;
-  conversationRefreshTrigger?: number;
+  journalRefreshTrigger?: number;
 }
 
 interface SidebarContentProps extends ChatSidebarProps {
@@ -31,23 +31,23 @@ interface SidebarContentProps extends ChatSidebarProps {
 }
 
 const SidebarContent = React.memo(function SidebarContent({
-  onSelectConversation,
-  onNewConversation,
+  onSelectJournal,
+  onNewJournal,
   onNewWrite,
   currentSessionId,
-  conversationRefreshTrigger,
+  journalRefreshTrigger,
   onItemClick,
   sidebarWidth,
 }: SidebarContentProps) {
   const router = useRouter();
   
-  const handleSelect = (sessionId: string) => {
-    onSelectConversation(sessionId);
+  const handleSelect = (sessionId: string, mode: "chat" | "write") => {
+    onSelectJournal(sessionId, mode);
     onItemClick?.(); // Close drawer on mobile
   };
 
   const handleNewChat = () => {
-    onNewConversation();
+    onNewJournal();
     onItemClick?.(); // Close drawer on mobile
   };
 
@@ -80,12 +80,12 @@ const SidebarContent = React.memo(function SidebarContent({
 
       <Separator className="bg-claude-border" />
 
-      {/* Conversations list */}
+      {/* Journals list */}
       <div className="flex-1 overflow-hidden">
-        <ConversationList
+        <JournalList
           onSelect={handleSelect}
           currentSessionId={currentSessionId}
-          refreshTrigger={conversationRefreshTrigger}
+          refreshTrigger={journalRefreshTrigger}
           sidebarWidth={sidebarWidth}
         />
       </div>
@@ -94,12 +94,12 @@ const SidebarContent = React.memo(function SidebarContent({
 });
 
 export function ChatSidebar({
-  onSelectConversation,
-  onNewConversation,
+  onSelectJournal,
+  onNewJournal,
   onNewWrite,
   currentSessionId,
   className,
-  conversationRefreshTrigger,
+  journalRefreshTrigger,
 }: ChatSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useSidebarWidth(); // Persistent width
@@ -161,11 +161,11 @@ export function ChatSidebar({
           </SheetTrigger>
           <SheetContent side="left" className="w-80 p-0 flex flex-col">
             <SidebarContent
-              onSelectConversation={onSelectConversation}
-              onNewConversation={onNewConversation}
+              onSelectJournal={onSelectJournal}
+              onNewJournal={onNewJournal}
               onNewWrite={onNewWrite}
               currentSessionId={currentSessionId}
-              conversationRefreshTrigger={conversationRefreshTrigger}
+              journalRefreshTrigger={journalRefreshTrigger}
               onItemClick={() => setMobileOpen(false)}
               sidebarWidth={320} // Mobile drawer uses fixed width
             />
@@ -183,11 +183,11 @@ export function ChatSidebar({
         style={{ width: `${sidebarWidth}px` }}
       >
         <SidebarContent
-          onSelectConversation={onSelectConversation}
-          onNewConversation={onNewConversation}
+          onSelectJournal={onSelectJournal}
+          onNewJournal={onNewJournal}
           onNewWrite={onNewWrite}
           currentSessionId={currentSessionId}
-          conversationRefreshTrigger={conversationRefreshTrigger}
+          journalRefreshTrigger={journalRefreshTrigger}
           sidebarWidth={sidebarWidth}
         />
         
@@ -200,4 +200,3 @@ export function ChatSidebar({
     </>
   );
 }
-
