@@ -70,17 +70,17 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        serif: ['var(--font-noto-serif)', 'Noto Serif', 'Georgia', 'serif'],
-        sans: ['var(--font-noto-serif)', 'Noto Serif', 'Georgia', 'serif'],
+        serif: ['var(--font-crimson-pro)', 'Crimson Pro', 'Georgia', 'serif'],
+        sans: ['var(--font-crimson-pro)', 'Crimson Pro', 'Georgia', 'serif'],
       },
       fontSize: {
-        'xs': ['0.875rem', { lineHeight: '1.25rem' }],
-        'sm': ['1rem', { lineHeight: '1.5rem' }],
-        'base': ['1.125rem', { lineHeight: '1.75rem' }],
-        'lg': ['1.25rem', { lineHeight: '1.875rem' }],
-        'xl': ['1.375rem', { lineHeight: '2rem' }],
-        '2xl': ['1.625rem', { lineHeight: '2.25rem' }],
-        '3xl': ['1.875rem', { lineHeight: '2.5rem' }],
+        'xs': ['0.9375rem', { lineHeight: '1.25rem' }], // 15px (was 14px)
+        'sm': ['1.0625rem', { lineHeight: '1.5rem' }],   // 17px (was 16px)
+        'base': ['1.1875rem', { lineHeight: '1.75rem' }], // 19px (was 18px)
+        'lg': ['1.3125rem', { lineHeight: '1.875rem' }], // 21px (was 20px)
+        'xl': ['1.4375rem', { lineHeight: '2rem' }],     // 23px (was 22px)
+        '2xl': ['1.6875rem', { lineHeight: '2.25rem' }], // 27px (was 26px)
+        '3xl': ['1.9375rem', { lineHeight: '2.5rem' }], // 31px (was 30px)
       },
       spacing: {
         '18': '4.5rem',

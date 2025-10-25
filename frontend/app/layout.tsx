@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Noto_Serif } from 'next/font/google';
+import { Crimson_Pro } from 'next/font/google';
 import './globals.css';
 import { ChatProvider } from '@/lib/context/ChatContext';
 import { WriteProvider } from '@/lib/context/WriteContext';
 
-const notoSerif = Noto_Serif({ 
+const crimsonPro = Crimson_Pro({ 
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-noto-serif',
+  variable: '--font-crimson-pro',
 });
 
 export const metadata: Metadata = {
@@ -29,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={notoSerif.variable}>
-      <body className={`${notoSerif.className} font-serif antialiased`}>
+    <html lang="en" className={crimsonPro.variable}>
+      <body className={`${crimsonPro.className} font-serif antialiased`}>
         <ChatProvider>
           <WriteProvider>
             {children}

@@ -116,7 +116,7 @@ export const WriteInterface = React.memo(function WriteInterface({
           {/* Write content textarea */}
           <div className="flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold text-claude-text">Your Journal</h2>
+              <h2 className="text-xl font-semibold text-claude-text">Your Journal</h2>
               <div className="flex items-center space-x-2">
                 <Button
                   onClick={handleManualSave}
@@ -144,7 +144,7 @@ export const WriteInterface = React.memo(function WriteInterface({
               value={localContent}
               onChange={(e) => handleContentChange(e.target.value)}
               placeholder="Write your thoughts here... (Auto-saves as you type)"
-              className="flex-1 resize-none text-base leading-relaxed"
+              className="flex-1 resize-none text-lg leading-relaxed"
               disabled={isLoading}
             />
           </div>
@@ -153,7 +153,7 @@ export const WriteInterface = React.memo(function WriteInterface({
           {messages.length > 0 && (
             <div className="flex-shrink-0">
               <div className="border-t border-claude-border pt-4">
-                <h3 className="text-sm font-medium text-claude-text-muted mb-3">AI Responses</h3>
+                <h3 className="text-base font-medium text-claude-text-muted mb-3">AI Responses</h3>
                 <MessageList 
                   messages={messages} 
                   isLoading={isLoading} 

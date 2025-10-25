@@ -20,7 +20,7 @@ export const StreamingMessage = React.memo(function StreamingMessage({
   return (
     <div className="flex w-full mb-6 justify-start">
       <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 claude-message-assistant">
-        <div className="prose prose-base max-w-none prose-gray dark:prose-invert">
+        <div className="prose prose-lg max-w-none prose-gray dark:prose-invert">
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       </div>

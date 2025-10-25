@@ -49,15 +49,15 @@ export const NewButton = React.memo(function NewButton({
           size="default"
         >
           <Plus className="h-4 w-4 mr-2" />
-          <span className="text-sm">New</span>
+          <span className="text-sm">New Journal</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuItem onClick={handleNewChat} className="cursor-pointer">
+        <DropdownMenuItem onClick={handleNewChat} className="cursor-pointer text-base">
           <MessageSquare className="h-4 w-4 mr-2" />
           <span>Chat</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleNewWrite} className="cursor-pointer">
+        <DropdownMenuItem onClick={handleNewWrite} className="cursor-pointer text-base">
           <PenTool className="h-4 w-4 mr-2" />
           <span>Write</span>
         </DropdownMenuItem>

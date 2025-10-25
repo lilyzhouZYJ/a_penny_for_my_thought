@@ -39,7 +39,7 @@ export const Message = React.memo(function Message({
         className={cn(
           'max-w-[85%] sm:max-w-[80%]',
           isUser
-            ? 'text-claude-text prose prose-base max-w-none border-l-2 border-claude-light-accent pl-4' // User messages with subtle left border
+            ? 'text-claude-text prose prose-lg max-w-none border-l-2 border-claude-light-accent pl-4' // User messages with subtle left border
             : 'claude-message-assistant' // AI messages in chat bubbles
         )}
       >
@@ -47,7 +47,7 @@ export const Message = React.memo(function Message({
           className={cn(
             isUser
               ? 'prose-gray dark:prose-invert'
-              : 'prose prose-base max-w-none prose-gray dark:prose-invert'
+              : 'prose prose-lg max-w-none prose-gray dark:prose-invert'
           )}
         >
           <ReactMarkdown

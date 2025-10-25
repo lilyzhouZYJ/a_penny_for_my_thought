@@ -53,7 +53,7 @@ export const ChatInput = React.memo(function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          className="min-h-[60px] max-h-[200px] resize-none text-lg claude-input flex-1" // text-lg prevents zoom on iOS
+          className="min-h-[60px] max-h-[200px] resize-none text-xl claude-input flex-1" // text-xl prevents zoom on iOS
           rows={1}
         />
         <Button

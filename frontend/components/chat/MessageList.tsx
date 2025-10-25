@@ -35,8 +35,8 @@ export const MessageList = React.memo(function MessageList({
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center text-claude-text-muted">
-          <p className="text-xl mb-2 font-medium">Start a conversation</p>
-          <p className="text-lg">
+          <p className="text-2xl mb-2 font-medium">Start a conversation</p>
+          <p className="text-xl">
             Type a message below to begin journaling with AI
           </p>
         </div>
@@ -71,7 +71,7 @@ export const MessageList = React.memo(function MessageList({
                 <div className="w-2 h-2 bg-claude-text-muted rounded-full animate-pulse" />
                 <div className="w-2 h-2 bg-claude-text-muted rounded-full animate-pulse delay-75" />
                 <div className="w-2 h-2 bg-claude-text-muted rounded-full animate-pulse delay-150" />
-                <span className="text-base text-claude-text-muted ml-2">AI is thinking...</span>
+                <span className="text-lg text-claude-text-muted ml-2">AI is thinking...</span>
               </div>
             </div>
           </div>

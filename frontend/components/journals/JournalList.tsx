@@ -13,9 +13,15 @@ import { JournalMetadata } from '@/lib/types/journal';
 import { listJournals, deleteJournal } from '@/lib/api/chat';
 import { updateJournalTitle } from '@/lib/api/journals';
 import { cn } from '@/lib/utils';
-import { FileText, Trash2, MessageSquare, PenTool } from 'lucide-react';
+import { FileText, Trash2, MessageSquare, PenTool, MoreHorizontal, Edit2 } from 'lucide-react';
 import { parseApiError } from '@/lib/utils/error-handlers';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface JournalListProps {
   onSelect: (sessionId: string, mode: "chat" | "write") => void;
@@ -35,6 +41,7 @@ export const JournalList = React.memo(function JournalList({
   const [journals, setJournals] = useState<JournalMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
 
   // Helper function to get the appropriate icon for the mode
   const getModeIcon = (mode: "chat" | "write") => {
@@ -87,10 +94,15 @@ export const JournalList = React.memo(function JournalList({
             : journal
         )
       );
+      setEditingJournalId(null);
     } catch (err) {
       console.error('Failed to update journal title:', err);
       throw err; // Re-throw to let EditableTitle handle the error
     }
+  }, []);
+
+  const handleStartRename = useCallback((journalId: string) => {
+    setEditingJournalId(journalId);
   }, []);
 
   useEffect(() => {
@@ -107,7 +119,7 @@ export const JournalList = React.memo(function JournalList({
   if (isLoading) {
     return (
       <div className={cn('flex items-center justify-center p-4', className)}>
-        <LoadingSpinner size="md" text="Loading journals..." />
+        <LoadingSpinner size="sm" text="Loading journals..." />
       </div>
     );
   }
@@ -129,7 +141,7 @@ export const JournalList = React.memo(function JournalList({
       <div className={cn('p-4 text-sm text-claude-text-muted text-center', className)}>
         <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p>No journals yet</p>
-        <p className="text-xs mt-1">Start a new journal to begin</p>
+        <p className="text-[11px] mt-1">Start a new journal to begin</p>
       </div>
     );
   }
@@ -141,7 +153,7 @@ export const JournalList = React.memo(function JournalList({
           <div
             key={journal.id}
             className={cn(
-              'w-full p-3 hover:bg-claude-hover transition-colors group cursor-pointer rounded-md',
+              'w-full p-2 hover:bg-claude-hover transition-colors group cursor-pointer rounded-md',
               currentSessionId === journal.id && 'bg-claude-hover'
             )}
             onClick={() => onSelect(journal.id, journal.mode)}
@@ -154,7 +166,7 @@ export const JournalList = React.memo(function JournalList({
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 {/* Mode Icon - positioned to align with center of title */}
                 <div 
-                  className="flex-shrink-0 mt-2.5"
+                  className="flex-shrink-0 mt-2"
                   title={journal.mode === "chat" ? "Chat journal" : "Write session"}
                 >
                   {React.createElement(getModeIcon(journal.mode), {
@@ -163,30 +175,61 @@ export const JournalList = React.memo(function JournalList({
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 space-y-1 min-w-0">
-                  <EditableTitle
-                    title={journal.title || 'Untitled Journal'}
-                    onUpdate={(newTitle) => handleUpdateTitle(journal.id, newTitle)}
-                    className="mb-1"
-                  />
-                  <p className="text-xs text-claude-text-muted truncate">
-                    {new Date(journal.date).toLocaleDateString()}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  {editingJournalId === journal.id ? (
+                    <EditableTitle
+                      title={journal.title || 'Untitled Journal'}
+                      onUpdate={(newTitle) => handleUpdateTitle(journal.id, newTitle)}
+                      className="mb-0"
+                    />
+                  ) : (
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-claude-text truncate block">
+                        {journal.title || 'Untitled Journal'}
+                      </span>
+                      <p className="text-[11px] text-claude-text-muted truncate -mt-0.5">
+                        {new Date(journal.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-destructive flex-shrink-0 ml-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteJournal(journal.id, journal.title);
-                }}
-                title="Delete journal"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-claude-text-muted hover:text-claude-text flex-shrink-0 ml-2 focus:ring-0 focus:outline-none border-0"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Journal options"
+                  >
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartRename(journal.id);
+                    }}
+                    className="text-[17px] cursor-pointer"
+                  >
+                    <Edit2 className="h-3 w-3 mr-2" />
+                    Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteJournal(journal.id, journal.title);
+                    }}
+                    className="text-[17px] cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         ))}
